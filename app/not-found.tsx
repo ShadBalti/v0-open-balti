@@ -1,5 +1,12 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import type { Metadata } from "next"
+import { generateMetadata } from "@/lib/metadata"
+
+export const metadata: Metadata = generateMetadata(
+  "Page Not Found",
+  "The page you are looking for does not exist or has been moved.",
+)
 
 export default function NotFound() {
   return (
@@ -12,7 +19,7 @@ export default function NotFound() {
           <Button asChild>
             <Link href="/">Go to Dictionary</Link>
           </Button>
-          <Button asChild variant="outline">
+          <Button variant="outline" asChild>
             <Link href="/about">Learn About Balti</Link>
           </Button>
         </div>

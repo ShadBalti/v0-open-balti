@@ -2,6 +2,12 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Github, Mail, Share2, BookOpen } from "lucide-react"
+import { generateMetadata } from "@/lib/metadata"
+
+export const metadata = generateMetadata(
+  "Contribute to OpenBalti",
+  "Help preserve and document the Balti language by contributing to the OpenBalti dictionary project.",
+)
 
 export default function ContributePage() {
   return (
@@ -24,8 +30,8 @@ export default function ContributePage() {
           <Card className="border-primary/20">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-primary" />
-                Add New Words
+                <BookOpen className="h-5 w-5 text-primary" aria-hidden="true" />
+                <span>Add New Words</span>
               </CardTitle>
               <CardDescription>Contribute to the dictionary by adding new words and translations</CardDescription>
             </CardHeader>
@@ -37,7 +43,9 @@ export default function ContributePage() {
             </CardContent>
             <CardFooter>
               <Button asChild>
-                <Link href="/">Add Words to Dictionary</Link>
+                <Link href="/">
+                  <span>Add Words to Dictionary</span>
+                </Link>
               </Button>
             </CardFooter>
           </Card>
@@ -56,11 +64,12 @@ export default function ContributePage() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   className="text-primary"
+                  aria-hidden="true"
                 >
                   <path d="m9 11-6 6v3h9l3-3"></path>
                   <path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"></path>
                 </svg>
-                Review and Edit
+                <span>Review and Edit</span>
               </CardTitle>
               <CardDescription>Help ensure accuracy by reviewing and editing existing entries</CardDescription>
             </CardHeader>
@@ -72,7 +81,9 @@ export default function ContributePage() {
             </CardContent>
             <CardFooter>
               <Button asChild>
-                <Link href="/review">Review Dictionary</Link>
+                <Link href="/review">
+                  <span>Review Dictionary</span>
+                </Link>
               </Button>
             </CardFooter>
           </Card>
@@ -80,8 +91,8 @@ export default function ContributePage() {
           <Card className="border-primary/20">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2">
-                <Github className="h-5 w-5 text-primary" />
-                Technical Contributions
+                <Github className="h-5 w-5 text-primary" aria-hidden="true" />
+                <span>Technical Contributions</span>
               </CardTitle>
               <CardDescription>Help improve the OpenBalti platform itself</CardDescription>
             </CardHeader>
@@ -95,7 +106,7 @@ export default function ContributePage() {
             <CardFooter>
               <Button asChild variant="outline">
                 <Link href="https://github.com/openbalti/dictionary" target="_blank" rel="noopener noreferrer">
-                  GitHub Repository
+                  <span>GitHub Repository</span>
                 </Link>
               </Button>
             </CardFooter>
@@ -104,8 +115,8 @@ export default function ContributePage() {
           <Card className="border-primary/20">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2">
-                <Share2 className="h-5 w-5 text-primary" />
-                Spread the Word
+                <Share2 className="h-5 w-5 text-primary" aria-hidden="true" />
+                <span>Spread the Word</span>
               </CardTitle>
               <CardDescription>Help us reach more people by sharing the project</CardDescription>
             </CardHeader>
@@ -123,12 +134,12 @@ export default function ContributePage() {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Share on Twitter
+                  <span>Share on Twitter</span>
                 </Link>
               </Button>
               <Button asChild variant="outline" size="sm">
                 <Link href="mailto:?subject=OpenBalti%20Dictionary&body=Check%20out%20the%20OpenBalti%20Dictionary%20project%20at%20https://openbalti.org">
-                  Share by Email
+                  <span>Share by Email</span>
                 </Link>
               </Button>
             </CardFooter>
@@ -138,8 +149,8 @@ export default function ContributePage() {
         <Card className="border-primary/20">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5 text-primary" />
-              Contact Us
+              <Mail className="h-5 w-5 text-primary" aria-hidden="true" />
+              <span>Contact Us</span>
             </CardTitle>
             <CardDescription>Get in touch with the OpenBalti team</CardDescription>
           </CardHeader>
@@ -151,12 +162,14 @@ export default function ContributePage() {
             <div className="flex flex-col sm:flex-row gap-3">
               <Button asChild>
                 <Link href="mailto:contact@openbalti.org">
-                  <Mail className="mr-2 h-4 w-4" />
-                  Email Us
+                  <Mail className="mr-2 h-4 w-4" aria-hidden="true" />
+                  <span>Email Us</span>
                 </Link>
               </Button>
               <Button asChild variant="outline">
-                <Link href="/about">Learn More About Balti</Link>
+                <Link href="/about">
+                  <span>Learn More About Balti</span>
+                </Link>
               </Button>
             </div>
           </CardContent>

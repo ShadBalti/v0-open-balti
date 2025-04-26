@@ -1,4 +1,13 @@
 import ReviewPage from "@/components/review-page"
+import { Suspense } from "react"
+import { Skeleton } from "@/components/ui/skeleton"
+import { generateMetadata } from "@/lib/metadata"
+import { DictionaryStructuredData } from "@/components/structured-data"
+
+export const metadata = generateMetadata(
+  "Review Dictionary",
+  "Help improve the OpenBalti dictionary by reviewing and editing entries for accuracy and completeness.",
+)
 
 export default function Review() {
   return (
@@ -10,8 +19,23 @@ export default function Review() {
             Help improve the OpenBalti dictionary by reviewing and editing entries
           </p>
         </div>
-        <ReviewPage />
+        <Suspense
+          fallback={
+            <div className="space-y-4">
+              <Skeleton className="h-10 w-full max-w-md" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-64 w-full" />
+            </div>
+          }
+        >
+          <ReviewPage />
+        </Suspense>
       </div>
+      <DictionaryStructuredData
+        url="/review"
+        name="OpenBalti Dictionary Review"
+        description="Review and improve the OpenBalti dictionary entries for accuracy and completeness."
+      />
     </div>
   )
 }

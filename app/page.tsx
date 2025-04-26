@@ -1,4 +1,7 @@
 import WordsPage from "@/components/words-page"
+import { Suspense } from "react"
+import { DictionaryStructuredData } from "@/components/structured-data"
+import { WordsPageSkeleton } from "@/components/skeletons/words-page-skeleton"
 
 export default function Home() {
   return (
@@ -10,8 +13,11 @@ export default function Home() {
             Explore and contribute to the digital preservation of the Balti language
           </p>
         </div>
-        <WordsPage />
+        <Suspense fallback={<WordsPageSkeleton />}>
+          <WordsPage />
+        </Suspense>
       </div>
+      <DictionaryStructuredData url="/" />
     </div>
   )
 }

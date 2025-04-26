@@ -5,14 +5,14 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
+import { SkipLink } from "@/components/layout/skip-link"
+import { baseMetadata } from "@/lib/metadata"
+import { OrganizationStructuredData } from "@/components/structured-data"
+import { Toaster } from "@/components/ui/toaster"
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-inter" })
 
-export const metadata: Metadata = {
-  title: "OpenBalti Dictionary",
-  description: "A comprehensive dictionary for the Balti language",
-    generator: 'v0.dev'
-}
+export const metadata: Metadata = baseMetadata
 
 export default function RootLayout({
   children,
@@ -21,13 +21,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <head />
+      <body className={`${inter.className} min-h-screen flex flex-col`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <SkipLink />
           <div className="relative min-h-screen flex flex-col">
             <Header />
-            <main className="flex-1">{children}</main>
+            <main id="main-content" className="flex-1" tabIndex={-1}>
+              {children}
+            </main>
             <Footer />
           </div>
+          <Toaster />
+          <OrganizationStructuredData />
         </ThemeProvider>
       </body>
     </html>
