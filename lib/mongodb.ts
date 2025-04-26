@@ -19,6 +19,7 @@ if (!cached) {
 
 async function dbConnect() {
   if (cached.conn) {
+    console.log("✅ Using existing MongoDB connection")
     return cached.conn
   }
 
@@ -27,9 +28,18 @@ async function dbConnect() {
       bufferCommands: false,
     }
 
-    cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {
-      return mongoose
-    })
+    console.log("🔄 Connecting to MongoDB...")
+
+    cached.promise = mongoose
+      .connect(MONGODB_URI!, opts)
+      .then((mongoose) => {
+        console.log("✅ MongoDB connected successfully!")
+        return mongoose
+      })
+      .catch((error) => {
+        console.error("❌ MongoDB connection error:", error)
+        throw error
+      })
   }
 
   try {
@@ -41,5 +51,27 @@ async function dbConnect() {
 
   return cached.conn
 }
+
+// Add an event listener for connection errors
+mongoose.connection.on("error", (err) => {
+  console.error("❌ MongoDB connection error:", err)
+})
+
+// Add an event listener for when the connection is disconnected
+mongoose.connection.on("disconnected", () => {
+  console.log("⚠️ MongoDB disconnected")
+})
+
+// Add an event listener for when the connection is reconnected
+mongoose.connection.on("reconnected", () => {
+  console.log("✅ MongoDB reconnected")
+})
+
+// Handle process termination
+process.on("SIGINT", async () => {
+  await mongoose.connection.close()
+  console.log("MongoDB connection closed due to app termination")
+  process.exit(0)
+})
 
 export default dbConnect

@@ -57,39 +57,39 @@ const sampleWords = [
 
 async function addSampleData() {
   try {
-    console.log("Connecting to MongoDB...")
+    console.log("🔄 Connecting to MongoDB...")
     await dbConnect()
-    console.log("Connected to MongoDB successfully!")
+    console.log("✅ MongoDB connected successfully!")
 
     // Check if there's already data in the collection
     const existingCount = await Word.countDocuments()
-    console.log(`Found ${existingCount} existing words in the database.`)
+    console.log(`📊 Found ${existingCount} existing words in the database.`)
 
     if (existingCount > 0) {
       const shouldContinue = process.argv.includes("--force")
       if (!shouldContinue) {
-        console.log("Database already contains words. Use --force flag to add sample data anyway.")
+        console.log("⚠️ Database already contains words. Use --force flag to add sample data anyway.")
         process.exit(0)
       }
-      console.log("Force flag detected. Adding sample data anyway...")
+      console.log("🔄 Force flag detected. Adding sample data anyway...")
     }
 
     // Insert the sample words
-    console.log(`Adding ${sampleWords.length} sample Balti-English word pairs...`)
+    console.log(`🔄 Adding ${sampleWords.length} sample Balti-English word pairs...`)
     const result = await Word.insertMany(sampleWords)
-    console.log(`Successfully added ${result.length} sample words to the database!`)
+    console.log(`✅ Successfully added ${result.length} sample words to the database!`)
 
     // Display some of the added words
-    console.log("\nSample of added words:")
+    console.log("\n📋 Sample of added words:")
     result.slice(0, 5).forEach((word) => {
       console.log(`- ${word.balti} : ${word.english}`)
     })
     console.log("...")
   } catch (error) {
-    console.error("Error adding sample data:", error)
+    console.error("❌ Error adding sample data:", error)
   } finally {
     // Close the connection
-    console.log("Closing MongoDB connection...")
+    console.log("🔄 Closing MongoDB connection...")
     process.exit(0)
   }
 }
