@@ -72,7 +72,7 @@ export default function ContributePage() {
             </CardContent>
             <CardFooter>
               <Button asChild>
-                <Link href="/">Review Dictionary</Link>
+                <Link href="/review">Review Dictionary</Link>
               </Button>
             </CardFooter>
           </Card>

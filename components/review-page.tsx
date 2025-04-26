@@ -1,0 +1,503 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { toast, ToastContainer } from "react-toastify"
+import "react-toastify/dist/ReactToastify.css"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { Badge } from "@/components/ui/badge"
+import { Loader2, Search, CheckCircle, AlertCircle, Edit, Trash2, Save, X, Filter } from "lucide-react"
+import type { IWord } from "@/models/Word"
+
+export default function ReviewPage() {
+  const [words, setWords] = useState<IWord[]>([])
+  const [filteredWords, setFilteredWords] = useState<IWord[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [editingWord, setEditingWord] = useState<IWord | null>(null)
+  const [editForm, setEditForm] = useState({ balti: "", english: "" })
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; wordId: string | null }>({
+    open: false,
+    wordId: null,
+  })
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "balti" | "english">("newest")
+  const [reviewFilter, setReviewFilter] = useState<"all" | "flagged" | "reviewed">("all")
+
+  // Simulate review status with local state
+  // In a real app, this would be stored in the database
+  const [reviewStatus, setReviewStatus] = useState<Record<string, "flagged" | "reviewed" | null>>({})
+
+  useEffect(() => {
+    fetchWords()
+  }, [])
+
+  useEffect(() => {
+    filterAndSortWords()
+  }, [words, searchTerm, sortBy, reviewFilter, reviewStatus])
+
+  const fetchWords = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch("/api/words")
+      const result = await response.json()
+
+      if (result.success) {
+        setWords(result.data)
+      } else {
+        toast.error(result.error || "Failed to fetch words")
+      }
+    } catch (error) {
+      console.error("Error fetching words:", error)
+      toast.error("Failed to fetch words")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const filterAndSortWords = () => {
+    let filtered = [...words]
+
+    // Apply search filter
+    if (searchTerm) {
+      filtered = filtered.filter(
+        (word) =>
+          word.balti.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          word.english.toLowerCase().includes(searchTerm.toLowerCase()),
+      )
+    }
+
+    // Apply review status filter
+    if (reviewFilter !== "all") {
+      filtered = filtered.filter((word) => reviewStatus[word._id] === reviewFilter)
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case "newest":
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        case "oldest":
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        case "balti":
+          return a.balti.localeCompare(b.balti)
+        case "english":
+          return a.english.localeCompare(b.english)
+        default:
+          return 0
+      }
+    })
+
+    setFilteredWords(filtered)
+  }
+
+  const handleUpdateWord = async () => {
+    if (!editingWord) return
+
+    try {
+      const response = await fetch(`/api/words/${editingWord._id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          balti: editForm.balti,
+          english: editForm.english,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        toast.success("Word updated successfully!")
+        setEditingWord(null)
+        fetchWords()
+        // Mark as reviewed
+        setReviewStatus((prev) => ({
+          ...prev,
+          [editingWord._id]: "reviewed",
+        }))
+      } else {
+        toast.error(result.error || "Failed to update word")
+      }
+    } catch (error) {
+      console.error("Error updating word:", error)
+      toast.error("Failed to update word")
+    }
+  }
+
+  const handleDeleteWord = async () => {
+    if (!deleteConfirm.wordId) return
+
+    try {
+      const response = await fetch(`/api/words/${deleteConfirm.wordId}`, {
+        method: "DELETE",
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        toast.success("Word deleted successfully!")
+        fetchWords()
+        // Remove from review status
+        setReviewStatus((prev) => {
+          const newStatus = { ...prev }
+          delete newStatus[deleteConfirm.wordId!]
+          return newStatus
+        })
+      } else {
+        toast.error(result.error || "Failed to delete word")
+      }
+    } catch (error) {
+      console.error("Error deleting word:", error)
+      toast.error("Failed to delete word")
+    } finally {
+      setDeleteConfirm({ open: false, wordId: null })
+    }
+  }
+
+  const startEditing = (word: IWord) => {
+    setEditingWord(word)
+    setEditForm({
+      balti: word.balti,
+      english: word.english,
+    })
+  }
+
+  const cancelEditing = () => {
+    setEditingWord(null)
+  }
+
+  const markAsFlagged = (wordId: string) => {
+    setReviewStatus((prev) => ({
+      ...prev,
+      [wordId]: "flagged",
+    }))
+    toast.info("Word flagged for review")
+  }
+
+  const markAsReviewed = (wordId: string) => {
+    setReviewStatus((prev) => ({
+      ...prev,
+      [wordId]: "reviewed",
+    }))
+    toast.success("Word marked as reviewed")
+  }
+
+  const getReviewStatusBadge = (status: "flagged" | "reviewed" | null) => {
+    if (status === "flagged") {
+      return (
+        <Badge variant="outline" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
+          <AlertCircle className="h-3 w-3 mr-1" />
+          Needs Review
+        </Badge>
+      )
+    } else if (status === "reviewed") {
+      return (
+        <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+          <CheckCircle className="h-3 w-3 mr-1" />
+          Reviewed
+        </Badge>
+      )
+    }
+    return null
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between gap-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search words..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Select value={reviewFilter} onValueChange={(value) => setReviewFilter(value as any)}>
+            <SelectTrigger className="w-[160px]">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Entries</SelectItem>
+              <SelectItem value="flagged">Needs Review</SelectItem>
+              <SelectItem value="reviewed">Reviewed</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={sortBy} onValueChange={(value) => setSortBy(value as any)}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">Newest First</SelectItem>
+              <SelectItem value="oldest">Oldest First</SelectItem>
+              <SelectItem value="balti">Balti (A-Z)</SelectItem>
+              <SelectItem value="english">English (A-Z)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <Tabs defaultValue="list" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="list">Word List</TabsTrigger>
+          <TabsTrigger value="stats">Review Stats</TabsTrigger>
+        </TabsList>
+        <TabsContent value="list" className="mt-6">
+          {loading ? (
+            <div className="flex justify-center items-center py-16">
+              <div className="flex flex-col items-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+                <p className="text-muted-foreground">Loading dictionary entries...</p>
+              </div>
+            </div>
+          ) : filteredWords.length === 0 ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>No Words Found</CardTitle>
+                <CardDescription>
+                  {searchTerm
+                    ? "No words match your search criteria. Try a different search term."
+                    : reviewFilter !== "all"
+                      ? `No words with status "${reviewFilter}" found.`
+                      : "No words found in the dictionary."}
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle>Dictionary Entries</CardTitle>
+                  <Badge variant="outline">
+                    {filteredWords.length} {filteredWords.length === 1 ? "word" : "words"}
+                  </Badge>
+                </div>
+                <CardDescription>
+                  Review and edit dictionary entries to ensure accuracy and completeness
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[30%]">Balti</TableHead>
+                        <TableHead className="w-[30%]">English</TableHead>
+                        <TableHead className="w-[20%]">Status</TableHead>
+                        <TableHead className="w-[20%] text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredWords.map((word) => (
+                        <TableRow key={word._id} className="group">
+                          <TableCell className="font-medium">{word.balti}</TableCell>
+                          <TableCell>{word.english}</TableCell>
+                          <TableCell>{getReviewStatusBadge(reviewStatus[word._id])}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => startEditing(word)}
+                                aria-label="Edit word"
+                                className="h-8 w-8 text-muted-foreground hover:text-primary"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => markAsFlagged(word._id)}
+                                aria-label="Flag for review"
+                                className="h-8 w-8 text-muted-foreground hover:text-yellow-500"
+                                disabled={reviewStatus[word._id] === "flagged"}
+                              >
+                                <AlertCircle className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => markAsReviewed(word._id)}
+                                aria-label="Mark as reviewed"
+                                className="h-8 w-8 text-muted-foreground hover:text-green-500"
+                                disabled={reviewStatus[word._id] === "reviewed"}
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setDeleteConfirm({ open: true, wordId: word._id })}
+                                aria-label="Delete word"
+                                className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+        <TabsContent value="stats" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Review Statistics</CardTitle>
+              <CardDescription>Overview of dictionary review progress</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-6 md:grid-cols-3">
+                <div className="flex flex-col items-center justify-center p-4 border rounded-lg">
+                  <span className="text-3xl font-bold text-primary">{words.length}</span>
+                  <span className="text-sm text-muted-foreground">Total Entries</span>
+                </div>
+                <div className="flex flex-col items-center justify-center p-4 border rounded-lg bg-green-50 dark:bg-green-900/20">
+                  <span className="text-3xl font-bold text-green-600 dark:text-green-400">
+                    {Object.values(reviewStatus).filter((status) => status === "reviewed").length}
+                  </span>
+                  <span className="text-sm text-muted-foreground">Reviewed</span>
+                </div>
+                <div className="flex flex-col items-center justify-center p-4 border rounded-lg bg-yellow-50 dark:bg-yellow-900/20">
+                  <span className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">
+                    {Object.values(reviewStatus).filter((status) => status === "flagged").length}
+                  </span>
+                  <span className="text-sm text-muted-foreground">Flagged for Review</span>
+                </div>
+              </div>
+
+              <div className="mt-8">
+                <h3 className="text-lg font-medium mb-4">Review Progress</h3>
+                <div className="w-full bg-muted rounded-full h-4 mb-2">
+                  <div
+                    className="bg-primary h-4 rounded-full"
+                    style={{
+                      width: `${
+                        words.length > 0
+                          ? (
+                              Object.values(reviewStatus).filter((status) => status === "reviewed").length /
+                                words.length
+                            ) * 100
+                          : 0
+                      }%`,
+                    }}
+                  ></div>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {Object.values(reviewStatus).filter((status) => status === "reviewed").length} of {words.length} words
+                  reviewed (
+                  {words.length > 0
+                    ? Math.round(
+                        (Object.values(reviewStatus).filter((status) => status === "reviewed").length / words.length) *
+                          100,
+                      )
+                    : 0}
+                  %)
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Edit Dialog */}
+      {editingWord && (
+        <Card className="border-primary/20 mt-6">
+          <CardHeader>
+            <CardTitle>Edit Word</CardTitle>
+            <CardDescription>Make corrections to the dictionary entry</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="edit-balti">Balti Word</Label>
+                <Input
+                  id="edit-balti"
+                  value={editForm.balti}
+                  onChange={(e) => setEditForm({ ...editForm, balti: e.target.value })}
+                  placeholder="Enter Balti word"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-english">English Translation</Label>
+                <Input
+                  id="edit-english"
+                  value={editForm.english}
+                  onChange={(e) => setEditForm({ ...editForm, english: e.target.value })}
+                  placeholder="Enter English translation"
+                />
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-between">
+            <Button variant="outline" onClick={cancelEditing}>
+              <X className="mr-2 h-4 w-4" />
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateWord}>
+              <Save className="mr-2 h-4 w-4" />
+              Save Changes
+            </Button>
+          </CardFooter>
+        </Card>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteConfirm.open} onOpenChange={(open) => setDeleteConfirm({ ...deleteConfirm, open })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the word from the dictionary.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteWord}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <ToastContainer
+        position="bottom-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
+    </div>
+  )
+}
