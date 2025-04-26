@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { MoonIcon, SunIcon, MenuIcon } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
@@ -10,6 +11,16 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 export function Header() {
   const { theme, setTheme } = useTheme()
   const [isOpen, setIsOpen] = useState(false)
+  const pathname = usePathname()
+
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setIsOpen(false)
+  }, [pathname])
+
+  const isActive = (path: string) => {
+    return pathname === path
+  }
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -29,22 +40,25 @@ export function Header() {
               <nav className="flex flex-col gap-4 mt-4">
                 <Link
                   href="/"
-                  className="text-foreground hover:text-primary transition-colors px-2 py-1 rounded-md hover:bg-muted"
-                  onClick={() => setIsOpen(false)}
+                  className={`transition-colors px-2 py-1 rounded-md hover:bg-muted ${
+                    isActive("/") ? "text-primary font-medium" : "text-foreground"
+                  }`}
                 >
                   Dictionary
                 </Link>
                 <Link
                   href="/about"
-                  className="text-foreground hover:text-primary transition-colors px-2 py-1 rounded-md hover:bg-muted"
-                  onClick={() => setIsOpen(false)}
+                  className={`transition-colors px-2 py-1 rounded-md hover:bg-muted ${
+                    isActive("/about") ? "text-primary font-medium" : "text-foreground"
+                  }`}
                 >
                   About Balti
                 </Link>
                 <Link
                   href="/contribute"
-                  className="text-foreground hover:text-primary transition-colors px-2 py-1 rounded-md hover:bg-muted"
-                  onClick={() => setIsOpen(false)}
+                  className={`transition-colors px-2 py-1 rounded-md hover:bg-muted ${
+                    isActive("/contribute") ? "text-primary font-medium" : "text-foreground"
+                  }`}
                 >
                   Contribute
                 </Link>
@@ -58,13 +72,28 @@ export function Header() {
           </Link>
         </div>
         <nav className="hidden md:flex items-center gap-6 text-sm">
-          <Link href="/" className="text-foreground hover:text-primary transition-colors font-medium">
+          <Link
+            href="/"
+            className={`transition-colors ${
+              isActive("/") ? "text-primary font-medium" : "text-muted-foreground hover:text-primary"
+            }`}
+          >
             Dictionary
           </Link>
-          <Link href="/about" className="text-muted-foreground hover:text-primary transition-colors">
+          <Link
+            href="/about"
+            className={`transition-colors ${
+              isActive("/about") ? "text-primary font-medium" : "text-muted-foreground hover:text-primary"
+            }`}
+          >
             About Balti
           </Link>
-          <Link href="/contribute" className="text-muted-foreground hover:text-primary transition-colors">
+          <Link
+            href="/contribute"
+            className={`transition-colors ${
+              isActive("/contribute") ? "text-primary font-medium" : "text-muted-foreground hover:text-primary"
+            }`}
+          >
             Contribute
           </Link>
         </nav>

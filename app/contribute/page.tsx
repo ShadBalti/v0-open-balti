@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Github, Mail, Share2, BookOpen } from "lucide-react"
 
 export default function ContributePage() {
   return (
@@ -20,9 +21,12 @@ export default function ContributePage() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Add New Words</CardTitle>
+          <Card className="border-primary/20">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-primary" />
+                Add New Words
+              </CardTitle>
               <CardDescription>Contribute to the dictionary by adding new words and translations</CardDescription>
             </CardHeader>
             <CardContent>
@@ -33,14 +37,31 @@ export default function ContributePage() {
             </CardContent>
             <CardFooter>
               <Button asChild>
-                <Link href="/">Add Words</Link>
+                <Link href="/">Add Words to Dictionary</Link>
               </Button>
             </CardFooter>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Review and Edit</CardTitle>
+          <Card className="border-primary/20">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-primary"
+                >
+                  <path d="m9 11-6 6v3h9l3-3"></path>
+                  <path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"></path>
+                </svg>
+                Review and Edit
+              </CardTitle>
               <CardDescription>Help ensure accuracy by reviewing and editing existing entries</CardDescription>
             </CardHeader>
             <CardContent>
@@ -51,14 +72,17 @@ export default function ContributePage() {
             </CardContent>
             <CardFooter>
               <Button asChild>
-                <Link href="/">Review Words</Link>
+                <Link href="/">Review Dictionary</Link>
               </Button>
             </CardFooter>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Technical Contributions</CardTitle>
+          <Card className="border-primary/20">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2">
+                <Github className="h-5 w-5 text-primary" />
+                Technical Contributions
+              </CardTitle>
               <CardDescription>Help improve the OpenBalti platform itself</CardDescription>
             </CardHeader>
             <CardContent>
@@ -70,16 +94,19 @@ export default function ContributePage() {
             </CardContent>
             <CardFooter>
               <Button asChild variant="outline">
-                <Link href="https://github.com" target="_blank" rel="noopener noreferrer">
+                <Link href="https://github.com/openbalti/dictionary" target="_blank" rel="noopener noreferrer">
                   GitHub Repository
                 </Link>
               </Button>
             </CardFooter>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Spread the Word</CardTitle>
+          <Card className="border-primary/20">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2">
+                <Share2 className="h-5 w-5 text-primary" />
+                Spread the Word
+              </CardTitle>
               <CardDescription>Help us reach more people by sharing the project</CardDescription>
             </CardHeader>
             <CardContent>
@@ -89,8 +116,17 @@ export default function ContributePage() {
                 efforts will be.
               </p>
             </CardContent>
-            <CardFooter>
-              <Button asChild variant="outline">
+            <CardFooter className="flex flex-wrap gap-2">
+              <Button asChild variant="outline" size="sm">
+                <Link
+                  href="https://twitter.com/intent/tweet?text=Check%20out%20the%20OpenBalti%20Dictionary%20project%20-%20helping%20preserve%20the%20Balti%20language!&url=https://openbalti.org"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Share on Twitter
+                </Link>
+              </Button>
+              <Button asChild variant="outline" size="sm">
                 <Link href="mailto:?subject=OpenBalti%20Dictionary&body=Check%20out%20the%20OpenBalti%20Dictionary%20project%20at%20https://openbalti.org">
                   Share by Email
                 </Link>
@@ -99,15 +135,39 @@ export default function ContributePage() {
           </Card>
         </div>
 
-        <div className="bg-muted p-6 rounded-lg">
-          <h2 className="text-xl font-semibold mb-4">Contact Us</h2>
-          <p className="mb-4">
-            If you have questions, suggestions, or would like to contribute in other ways, please don't hesitate to
-            reach out to us.
+        <Card className="border-primary/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5 text-primary" />
+              Contact Us
+            </CardTitle>
+            <CardDescription>Get in touch with the OpenBalti team</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-4">
+              If you have questions, suggestions, or would like to contribute in other ways, please don't hesitate to
+              reach out to us. We're always looking for new collaborators and supporters.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button asChild>
+                <Link href="mailto:contact@openbalti.org">
+                  <Mail className="mr-2 h-4 w-4" />
+                  Email Us
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/about">Learn More About Balti</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="text-center text-sm text-muted-foreground">
+          <p>
+            OpenBalti is an open-source project dedicated to preserving and promoting the Balti language.
+            <br />
+            Join us in our mission to document and revitalize this important cultural heritage.
           </p>
-          <Button asChild>
-            <Link href="mailto:contact@openbalti.org">Email Us</Link>
-          </Button>
         </div>
       </div>
     </div>
