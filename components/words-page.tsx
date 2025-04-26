@@ -7,7 +7,18 @@ import WordList from "@/components/word-list"
 import WordForm from "@/components/word-form"
 import SearchBar from "@/components/search-bar"
 import { Button } from "@/components/ui/button"
-import { Loader2 } from "lucide-react"
+import { Loader2, RotateCw, ArrowLeftRight } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { IWord } from "@/models/Word"
 
 export default function WordsPage() {
@@ -16,6 +27,11 @@ export default function WordsPage() {
   const [direction, setDirection] = useState<"balti-to-english" | "english-to-balti">("balti-to-english")
   const [searchTerm, setSearchTerm] = useState("")
   const [editingWord, setEditingWord] = useState<IWord | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; wordId: string | null }>({
+    open: false,
+    wordId: null,
+  })
+  const [activeTab, setActiveTab] = useState<"browse" | "add">("browse")
 
   useEffect(() => {
     fetchWords()
@@ -57,6 +73,7 @@ export default function WordsPage() {
       if (result.success) {
         toast.success("Word added successfully!")
         fetchWords()
+        setActiveTab("browse")
       } else {
         toast.error(result.error || "Failed to add word")
       }
@@ -91,13 +108,15 @@ export default function WordsPage() {
     }
   }
 
-  const handleDeleteWord = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this word?")) {
-      return
-    }
+  const confirmDelete = (id: string) => {
+    setDeleteConfirm({ open: true, wordId: id })
+  }
+
+  const handleDeleteWord = async () => {
+    if (!deleteConfirm.wordId) return
 
     try {
-      const response = await fetch(`/api/words/${id}`, {
+      const response = await fetch(`/api/words/${deleteConfirm.wordId}`, {
         method: "DELETE",
       })
 
@@ -112,6 +131,8 @@ export default function WordsPage() {
     } catch (error) {
       console.error("Error deleting word:", error)
       toast.error("Failed to delete word")
+    } finally {
+      setDeleteConfirm({ open: false, wordId: null })
     }
   }
 
@@ -120,33 +141,88 @@ export default function WordsPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col md:flex-row justify-between gap-4">
-        <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
-        <Button onClick={toggleDirection} className="whitespace-nowrap">
-          {direction === "balti-to-english" ? "Balti → English" : "English → Balti"}
-        </Button>
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center items-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <span className="ml-2">Loading words...</span>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between gap-4">
+        <div className="flex-1">
+          <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
         </div>
-      ) : (
-        <WordList words={words} direction={direction} onEdit={setEditingWord} onDelete={handleDeleteWord} />
-      )}
-
-      <div className="bg-muted p-6 rounded-lg">
-        <h2 className="text-xl font-bold mb-4">{editingWord ? "Edit Word" : "Add New Word"}</h2>
-        <WordForm
-          initialData={editingWord}
-          onSubmit={editingWord ? (data) => handleUpdateWord(editingWord._id, data) : handleAddWord}
-          onCancel={editingWord ? () => setEditingWord(null) : undefined}
-        />
+        <div className="flex gap-2">
+          <Button onClick={toggleDirection} variant="outline" className="whitespace-nowrap">
+            <ArrowLeftRight className="mr-2 h-4 w-4" />
+            {direction === "balti-to-english" ? "Balti → English" : "English → Balti"}
+          </Button>
+          <Button onClick={() => fetchWords()} variant="outline" size="icon" aria-label="Refresh word list">
+            <RotateCw className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
-      <ToastContainer position="bottom-right" />
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "browse" | "add")} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="browse">Browse Dictionary</TabsTrigger>
+          <TabsTrigger value="add">Add New Word</TabsTrigger>
+        </TabsList>
+        <TabsContent value="browse" className="mt-6">
+          {loading ? (
+            <div className="flex justify-center items-center py-16">
+              <div className="flex flex-col items-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+                <p className="text-muted-foreground">Loading dictionary...</p>
+              </div>
+            </div>
+          ) : (
+            <WordList
+              words={words}
+              direction={direction}
+              onEdit={(word) => {
+                setEditingWord(word)
+                setActiveTab("add")
+              }}
+              onDelete={confirmDelete}
+            />
+          )}
+        </TabsContent>
+        <TabsContent value="add" className="mt-6">
+          <WordForm
+            initialData={editingWord}
+            onSubmit={editingWord ? (data) => handleUpdateWord(editingWord._id, data) : handleAddWord}
+            onCancel={editingWord ? () => setEditingWord(null) : undefined}
+          />
+        </TabsContent>
+      </Tabs>
+
+      <AlertDialog open={deleteConfirm.open} onOpenChange={(open) => setDeleteConfirm({ ...deleteConfirm, open })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the word from the dictionary.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteWord}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <ToastContainer
+        position="bottom-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
     </div>
   )
 }
