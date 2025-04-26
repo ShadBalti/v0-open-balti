@@ -37,10 +37,7 @@ export default function ReviewPage() {
   })
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "balti" | "english">("newest")
   const [reviewFilter, setReviewFilter] = useState<"all" | "flagged" | "reviewed">("all")
-
-  // Simulate review status with local state
-  // In a real app, this would be stored in the database
-  const [reviewStatus, setReviewStatus] = useState<Record<string, "flagged" | "reviewed" | null>>({})
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
 
   useEffect(() => {
     fetchWords()
@@ -48,7 +45,7 @@ export default function ReviewPage() {
 
   useEffect(() => {
     filterAndSortWords()
-  }, [words, searchTerm, sortBy, reviewFilter, reviewStatus])
+  }, [words, searchTerm, sortBy, reviewFilter])
 
   const fetchWords = async () => {
     try {
@@ -83,7 +80,7 @@ export default function ReviewPage() {
 
     // Apply review status filter
     if (reviewFilter !== "all") {
-      filtered = filtered.filter((word) => reviewStatus[word._id] === reviewFilter)
+      filtered = filtered.filter((word) => word.reviewStatus === reviewFilter)
     }
 
     // Apply sorting
@@ -126,11 +123,8 @@ export default function ReviewPage() {
         toast.success("Word updated successfully!")
         setEditingWord(null)
         fetchWords()
-        // Mark as reviewed
-        setReviewStatus((prev) => ({
-          ...prev,
-          [editingWord._id]: "reviewed",
-        }))
+        // Mark as reviewed after update
+        await updateReviewStatus(editingWord._id, "reviewed")
       } else {
         toast.error(result.error || "Failed to update word")
       }
@@ -153,12 +147,6 @@ export default function ReviewPage() {
       if (result.success) {
         toast.success("Word deleted successfully!")
         fetchWords()
-        // Remove from review status
-        setReviewStatus((prev) => {
-          const newStatus = { ...prev }
-          delete newStatus[deleteConfirm.wordId!]
-          return newStatus
-        })
       } else {
         toast.error(result.error || "Failed to delete word")
       }
@@ -167,6 +155,41 @@ export default function ReviewPage() {
       toast.error("Failed to delete word")
     } finally {
       setDeleteConfirm({ open: false, wordId: null })
+    }
+  }
+
+  const updateReviewStatus = async (wordId: string, status: "flagged" | "reviewed" | null) => {
+    try {
+      setIsUpdatingStatus(true)
+      const response = await fetch(`/api/words/${wordId}/review`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          reviewStatus: status,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        // Update the word in the local state
+        setWords((prevWords) =>
+          prevWords.map((word) => (word._id === wordId ? { ...word, reviewStatus: status } : word)),
+        )
+
+        return true
+      } else {
+        toast.error(result.error || "Failed to update review status")
+        return false
+      }
+    } catch (error) {
+      console.error("Error updating review status:", error)
+      toast.error("Failed to update review status")
+      return false
+    } finally {
+      setIsUpdatingStatus(false)
     }
   }
 
@@ -182,20 +205,25 @@ export default function ReviewPage() {
     setEditingWord(null)
   }
 
-  const markAsFlagged = (wordId: string) => {
-    setReviewStatus((prev) => ({
-      ...prev,
-      [wordId]: "flagged",
-    }))
-    toast.info("Word flagged for review")
+  const markAsFlagged = async (wordId: string) => {
+    const success = await updateReviewStatus(wordId, "flagged")
+    if (success) {
+      toast.info("Word flagged for review")
+    }
   }
 
-  const markAsReviewed = (wordId: string) => {
-    setReviewStatus((prev) => ({
-      ...prev,
-      [wordId]: "reviewed",
-    }))
-    toast.success("Word marked as reviewed")
+  const markAsReviewed = async (wordId: string) => {
+    const success = await updateReviewStatus(wordId, "reviewed")
+    if (success) {
+      toast.success("Word marked as reviewed")
+    }
+  }
+
+  const clearReviewStatus = async (wordId: string) => {
+    const success = await updateReviewStatus(wordId, null)
+    if (success) {
+      toast.info("Review status cleared")
+    }
   }
 
   const getReviewStatusBadge = (status: "flagged" | "reviewed" | null) => {
@@ -214,7 +242,19 @@ export default function ReviewPage() {
         </Badge>
       )
     }
-    return null
+    return (
+      <Badge variant="outline" className="text-muted-foreground">
+        Not Reviewed
+      </Badge>
+    )
+  }
+
+  const getReviewedCount = () => {
+    return words.filter((word) => word.reviewStatus === "reviewed").length
+  }
+
+  const getFlaggedCount = () => {
+    return words.filter((word) => word.reviewStatus === "flagged").length
   }
 
   return (
@@ -311,7 +351,7 @@ export default function ReviewPage() {
                         <TableRow key={word._id} className="group">
                           <TableCell className="font-medium">{word.balti}</TableCell>
                           <TableCell>{word.english}</TableCell>
-                          <TableCell>{getReviewStatusBadge(reviewStatus[word._id])}</TableCell>
+                          <TableCell>{getReviewStatusBadge(word.reviewStatus)}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-1">
                               <Button
@@ -320,6 +360,7 @@ export default function ReviewPage() {
                                 onClick={() => startEditing(word)}
                                 aria-label="Edit word"
                                 className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                disabled={isUpdatingStatus}
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
@@ -329,7 +370,7 @@ export default function ReviewPage() {
                                 onClick={() => markAsFlagged(word._id)}
                                 aria-label="Flag for review"
                                 className="h-8 w-8 text-muted-foreground hover:text-yellow-500"
-                                disabled={reviewStatus[word._id] === "flagged"}
+                                disabled={isUpdatingStatus || word.reviewStatus === "flagged"}
                               >
                                 <AlertCircle className="h-4 w-4" />
                               </Button>
@@ -339,7 +380,7 @@ export default function ReviewPage() {
                                 onClick={() => markAsReviewed(word._id)}
                                 aria-label="Mark as reviewed"
                                 className="h-8 w-8 text-muted-foreground hover:text-green-500"
-                                disabled={reviewStatus[word._id] === "reviewed"}
+                                disabled={isUpdatingStatus || word.reviewStatus === "reviewed"}
                               >
                                 <CheckCircle className="h-4 w-4" />
                               </Button>
@@ -349,6 +390,7 @@ export default function ReviewPage() {
                                 onClick={() => setDeleteConfirm({ open: true, wordId: word._id })}
                                 aria-label="Delete word"
                                 className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                disabled={isUpdatingStatus}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -376,15 +418,11 @@ export default function ReviewPage() {
                   <span className="text-sm text-muted-foreground">Total Entries</span>
                 </div>
                 <div className="flex flex-col items-center justify-center p-4 border rounded-lg bg-green-50 dark:bg-green-900/20">
-                  <span className="text-3xl font-bold text-green-600 dark:text-green-400">
-                    {Object.values(reviewStatus).filter((status) => status === "reviewed").length}
-                  </span>
+                  <span className="text-3xl font-bold text-green-600 dark:text-green-400">{getReviewedCount()}</span>
                   <span className="text-sm text-muted-foreground">Reviewed</span>
                 </div>
                 <div className="flex flex-col items-center justify-center p-4 border rounded-lg bg-yellow-50 dark:bg-yellow-900/20">
-                  <span className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">
-                    {Object.values(reviewStatus).filter((status) => status === "flagged").length}
-                  </span>
+                  <span className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">{getFlaggedCount()}</span>
                   <span className="text-sm text-muted-foreground">Flagged for Review</span>
                 </div>
               </div>
@@ -395,27 +433,13 @@ export default function ReviewPage() {
                   <div
                     className="bg-primary h-4 rounded-full"
                     style={{
-                      width: `${
-                        words.length > 0
-                          ? (
-                              Object.values(reviewStatus).filter((status) => status === "reviewed").length /
-                                words.length
-                            ) * 100
-                          : 0
-                      }%`,
+                      width: `${words.length > 0 ? (getReviewedCount() / words.length) * 100 : 0}%`,
                     }}
                   ></div>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {Object.values(reviewStatus).filter((status) => status === "reviewed").length} of {words.length} words
-                  reviewed (
-                  {words.length > 0
-                    ? Math.round(
-                        (Object.values(reviewStatus).filter((status) => status === "reviewed").length / words.length) *
-                          100,
-                      )
-                    : 0}
-                  %)
+                  {getReviewedCount()} of {words.length} words reviewed (
+                  {words.length > 0 ? Math.round((getReviewedCount() / words.length) * 100) : 0}%)
                 </p>
               </div>
             </CardContent>
