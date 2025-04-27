@@ -9,6 +9,7 @@ import { SkipLink } from "@/components/layout/skip-link"
 import { baseMetadata } from "@/lib/metadata"
 import { OrganizationStructuredData } from "@/components/structured-data"
 import { Toaster } from "@/components/ui/toaster"
+import { SessionProvider } from "@/components/auth/session-provider"
 
 const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-inter" })
 
@@ -23,18 +24,20 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head />
       <body className={`${inter.className} min-h-screen flex flex-col`}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <SkipLink />
-          <div className="relative min-h-screen flex flex-col">
-            <Header />
-            <main id="main-content" className="flex-1" tabIndex={-1}>
-              {children}
-            </main>
-            <Footer />
-          </div>
-          <Toaster />
-          <OrganizationStructuredData />
-        </ThemeProvider>
+        <SessionProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+            <SkipLink />
+            <div className="relative min-h-screen flex flex-col">
+              <Header />
+              <main id="main-content" className="flex-1" tabIndex={-1}>
+                {children}
+              </main>
+              <Footer />
+            </div>
+            <Toaster />
+            <OrganizationStructuredData />
+          </ThemeProvider>
+        </SessionProvider>
       </body>
     </html>
   )

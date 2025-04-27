@@ -7,6 +7,7 @@ import { MoonIcon, SunIcon, MenuIcon } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { UserDropdown } from "@/components/auth/user-dropdown"
 
 export function Header() {
   const { theme, setTheme } = useTheme()
@@ -144,6 +145,7 @@ export function Header() {
               />
             </Button>
           )}
+          <UserDropdown />
         </div>
       </div>
     </header>
