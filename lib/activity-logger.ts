@@ -1,5 +1,7 @@
 import dbConnect from "@/lib/mongodb"
 import ActivityLog from "@/models/ActivityLog"
+import WordHistory from "@/models/WordHistory"
+import User from "@/models/User"
 import type { Session } from "next-auth"
 import { incrementUserStat } from "@/lib/update-user-stats"
 
@@ -30,6 +32,7 @@ export async function logActivity({
   try {
     await dbConnect()
 
+    // Log to activity log
     await ActivityLog.create({
       user: session.user.id,
       action,
@@ -48,6 +51,25 @@ export async function logActivity({
       await incrementUserStat(session.user.id, "wordsEdited")
     } else if (action === "review") {
       await incrementUserStat(session.user.id, "wordsReviewed")
+    }
+
+    // Log to word history for create, update, delete actions
+    if (["create", "update", "delete"].includes(action) && wordId && wordBalti && wordEnglish) {
+      // Get user details for the history record
+      const user = await User.findById(session.user.id).select("name image").lean()
+
+      await WordHistory.create({
+        wordId,
+        balti: wordBalti,
+        english: wordEnglish,
+        action: action as "create" | "update" | "delete",
+        userId: session.user.id,
+        userName: user?.name || session.user.name,
+        userImage: user?.image || session.user.image,
+        details,
+      })
+
+      console.log(`✅ Word history logged: ${action} for word ${wordId}`)
     }
   } catch (error) {
     console.error("❌ Error logging activity:", error)

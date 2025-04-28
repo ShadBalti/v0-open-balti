@@ -15,8 +15,8 @@ export async function GET(req: NextRequest) {
     const sortBy = searchParams.get("sortBy") || "contributions"
     const search = searchParams.get("search") || ""
 
-    // Build query
-    const query: any = { isPublic: true }
+    // Build query - show all accounts, not just public ones
+    const query: any = {}
 
     if (search) {
       query.name = { $regex: search, $options: "i" }
@@ -28,7 +28,9 @@ export async function GET(req: NextRequest) {
     // Determine sort order
     let sort: any = {}
     if (sortBy === "contributions") {
+      // Calculate total contributions for sorting
       sort = {
+        "contributionStats.total": -1, // Sort by total contributions
         "contributionStats.wordsAdded": -1,
         "contributionStats.wordsEdited": -1,
         "contributionStats.wordsReviewed": -1,
@@ -39,13 +41,38 @@ export async function GET(req: NextRequest) {
       sort = { name: 1 }
     }
 
-    // Fetch users with pagination
-    const users = await User.find(query)
-      .select("name image role bio contributionStats createdAt")
-      .sort(sort)
-      .skip(skip)
-      .limit(limit)
-      .lean()
+    // Add a calculated field for total contributions
+    const pipeline = [
+      { $match: query },
+      {
+        $addFields: {
+          "contributionStats.total": {
+            $add: [
+              "$contributionStats.wordsAdded",
+              "$contributionStats.wordsEdited",
+              "$contributionStats.wordsReviewed",
+            ],
+          },
+        },
+      },
+      { $sort: sort },
+      { $skip: skip },
+      { $limit: limit },
+      {
+        $project: {
+          name: 1,
+          image: 1,
+          role: 1,
+          bio: 1,
+          isPublic: 1,
+          contributionStats: 1,
+          createdAt: 1,
+        },
+      },
+    ]
+
+    // Fetch users with pagination using aggregation
+    const users = await User.aggregate(pipeline)
 
     // Get total count for pagination
     const totalCount = await User.countDocuments(query)

@@ -3,10 +3,11 @@
 import { useState } from "react"
 import type { IWord } from "@/models/Word"
 import { Button } from "@/components/ui/button"
-import { Edit, Trash2, ChevronDown, ChevronUp } from "lucide-react"
+import { Edit, Trash2, ChevronDown, ChevronUp, History } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
 
 interface WordListProps {
   words: IWord[]
@@ -87,7 +88,7 @@ export default function WordList({ words, direction, onEdit, onDelete, showActio
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[45%]" onClick={() => handleSort(firstColumnField as "balti" | "english")}>
+                <TableHead className="w-[40%]" onClick={() => handleSort(firstColumnField as "balti" | "english")}>
                   <div className="flex items-center cursor-pointer hover:text-primary transition-colors">
                     {firstColumnHeader}
                     {sortField === firstColumnField &&
@@ -98,7 +99,7 @@ export default function WordList({ words, direction, onEdit, onDelete, showActio
                       ))}
                   </div>
                 </TableHead>
-                <TableHead className="w-[45%]" onClick={() => handleSort(secondColumnField as "balti" | "english")}>
+                <TableHead className="w-[40%]" onClick={() => handleSort(secondColumnField as "balti" | "english")}>
                   <div className="flex items-center cursor-pointer hover:text-primary transition-colors">
                     {secondColumnHeader}
                     {sortField === secondColumnField &&
@@ -109,7 +110,7 @@ export default function WordList({ words, direction, onEdit, onDelete, showActio
                       ))}
                   </div>
                 </TableHead>
-                {showActions && <TableHead className="w-[10%] text-right">Actions</TableHead>}
+                <TableHead className="w-[20%] text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -118,28 +119,41 @@ export default function WordList({ words, direction, onEdit, onDelete, showActio
                   <TableCell className="font-medium">{isBaltiToEnglish ? word.balti : word.english}</TableCell>
                   <TableCell>{isBaltiToEnglish ? word.english : word.balti}</TableCell>
                   <TableCell className="text-right">
-                    {showActions ? (
-                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => onEdit(word)}
-                          aria-label="Edit word"
-                          className="h-8 w-8 text-muted-foreground hover:text-primary"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => onDelete(word._id)}
-                          aria-label="Delete word"
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ) : null}
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        asChild
+                        aria-label="View word history"
+                        className="h-8 w-8 text-muted-foreground hover:text-primary"
+                      >
+                        <Link href={`/words/${word._id}/history`}>
+                          <History className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                      {showActions && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => onEdit(word)}
+                            aria-label="Edit word"
+                            className="h-8 w-8 text-muted-foreground hover:text-primary"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => onDelete(word._id)}
+                            aria-label="Delete word"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, Search, ChevronLeft, ChevronRight } from "lucide-react"
+import { Loader2, Search, ChevronLeft, ChevronRight, Lock } from "lucide-react"
 import { toast } from "react-toastify"
 import Link from "next/link"
 import { format } from "date-fns"
@@ -19,10 +19,12 @@ interface Contributor {
   image?: string
   role: string
   bio?: string
+  isPublic: boolean
   contributionStats: {
     wordsAdded: number
     wordsEdited: number
     wordsReviewed: number
+    total?: number
   }
   createdAt: string
 }
@@ -77,6 +79,9 @@ export default function ContributorsList() {
   }
 
   const getTotalContributions = (contributor: Contributor) => {
+    if (contributor.contributionStats.total !== undefined) {
+      return contributor.contributionStats.total
+    }
     const { wordsAdded, wordsEdited, wordsReviewed } = contributor.contributionStats
     return wordsAdded + wordsEdited + wordsReviewed
   }
@@ -144,6 +149,8 @@ export default function ContributorsList() {
                     .toUpperCase()
                 : "U"
 
+              const totalContributions = getTotalContributions(contributor)
+
               return (
                 <Card key={contributor._id} className="overflow-hidden hover:shadow-md transition-shadow">
                   <Link href={`/users/${contributor._id}`} className="block h-full">
@@ -153,7 +160,10 @@ export default function ContributorsList() {
                         <AvatarFallback>{initials}</AvatarFallback>
                       </Avatar>
                       <div>
-                        <CardTitle className="text-lg">{contributor.name}</CardTitle>
+                        <div className="flex items-center gap-2">
+                          <CardTitle className="text-lg">{contributor.name}</CardTitle>
+                          {!contributor.isPublic && <Lock className="h-3 w-3 text-muted-foreground" />}
+                        </div>
                         <div className="flex items-center mt-1">
                           <Badge variant="outline" className="text-xs">
                             {contributor.role === "admin"
@@ -171,7 +181,7 @@ export default function ContributorsList() {
                       )}
                       <div className="flex justify-between items-center">
                         <Badge variant="outline" className="bg-primary/10 text-primary">
-                          {getTotalContributions(contributor)} Contributions
+                          {totalContributions} Contributions
                         </Badge>
                         <span className="text-xs text-muted-foreground">
                           Joined {formatDate(contributor.createdAt)}
