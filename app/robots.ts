@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/api/"],
     },
-    sitemap: `${process.env.NEXT_PUBLIC_APP_URL || "https://openbalti.org"}/sitemap.xml`,
+    sitemap: `${process.env.NEXT_PUBLIC_APP_URL || "https://openbalti.vercel.app"}/sitemap.xml`,
   }
 }

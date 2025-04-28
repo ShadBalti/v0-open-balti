@@ -10,6 +10,8 @@ import { baseMetadata } from "@/lib/metadata"
 import { OrganizationStructuredData } from "@/components/structured-data"
 import { Toaster } from "@/components/ui/toaster"
 import { SessionProvider } from "@/components/auth/session-provider"
+import { GoogleAnalytics } from "@/components/analytics"
+import { Suspense } from "react"
 
 const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-inter" })
 
@@ -22,13 +24,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head />
+      <head>
+        <meta name="google-site-verification" content="6qYt2H85MUvuaHNGAZKRY87nANOkZ7hRfCgPcs6EOKY" />
+        <GoogleAnalytics />
+      </head>
       <body className={`${inter.className} min-h-screen flex flex-col`}>
         <SessionProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
             <SkipLink />
             <div className="relative min-h-screen flex flex-col">
-              <Header />
+              <Suspense fallback={<div className="h-16 border-b"></div>}>
+                <Header />
+              </Suspense>
               <main id="main-content" className="flex-1" tabIndex={-1}>
                 {children}
               </main>

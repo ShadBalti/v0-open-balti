@@ -13,7 +13,7 @@ export function DictionaryStructuredData({
   description = baseMetadata.description as string,
   wordCount,
 }: DictionaryStructuredDataProps) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://openbalti.org"
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://openbalti.vercel.app"
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -47,7 +47,7 @@ export function DictionaryStructuredData({
 }
 
 export function OrganizationStructuredData() {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://openbalti.org"
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://openbalti.vercel.app"
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -55,7 +55,7 @@ export function OrganizationStructuredData() {
     name: "OpenBalti Project",
     url: baseUrl,
     logo: `${baseUrl}/logo.png`,
-    sameAs: ["https://twitter.com/openbalti", "https://github.com/openbalti"],
+    sameAs: ["https://twitter.com/openbalti", "https://github.com/ShadBalti/openbalti"],
     description: "A community-driven project dedicated to preserving and documenting the Balti language",
   }
 

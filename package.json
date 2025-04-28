@@ -68,11 +68,11 @@
     "@mongodb-js/zstd": "latest",
     "mongodb-client-encryption": "latest",
     "@aws-sdk/credential-providers": "latest",
-    "react-toastify": "latest",
-    "mongoose": "latest",
     "next-auth": "latest",
     "@auth/mongodb-adapter": "latest",
-    "bcryptjs": "latest"
+    "bcryptjs": "latest",
+    "react-toastify": "latest",
+    "mongoose": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",
