@@ -15,73 +15,50 @@ export async function GET(req: NextRequest) {
     const sortBy = searchParams.get("sortBy") || "contributions"
     const search = searchParams.get("search") || ""
 
-    // Build query - show all accounts, not just public ones
-    const query: any = {}
+    // Calculate pagination
+    const skip = (page - 1) * limit
 
+    // Build query
+    const query: any = {}
     if (search) {
       query.name = { $regex: search, $options: "i" }
     }
 
-    // Calculate pagination
-    const skip = (page - 1) * limit
+    // Fetch users with calculated total contributions
+    let users = await User.find(query)
+      .select("name image role bio location website isPublic contributionStats createdAt")
+      .lean()
 
-    // Determine sort order
-    let sort: any = {}
-    if (sortBy === "contributions") {
-      // Calculate total contributions for sorting
-      sort = {
-        "contributionStats.total": -1, // Sort by total contributions
-        "contributionStats.wordsAdded": -1,
-        "contributionStats.wordsEdited": -1,
-        "contributionStats.wordsReviewed": -1,
+    // Calculate total contributions for each user
+    users = users.map((user) => {
+      const stats = user.contributionStats || { wordsAdded: 0, wordsEdited: 0, wordsReviewed: 0 }
+      return {
+        ...user,
+        contributionStats: {
+          ...stats,
+          total: (stats.wordsAdded || 0) + (stats.wordsEdited || 0) + (stats.wordsReviewed || 0),
+        },
       }
+    })
+
+    // Apply sorting
+    if (sortBy === "contributions") {
+      users.sort((a, b) => b.contributionStats.total - a.contributionStats.total)
     } else if (sortBy === "recent") {
-      sort = { createdAt: -1 }
+      users.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     } else if (sortBy === "name") {
-      sort = { name: 1 }
+      users.sort((a, b) => a.name.localeCompare(b.name))
     }
 
-    // Add a calculated field for total contributions
-    const pipeline = [
-      { $match: query },
-      {
-        $addFields: {
-          "contributionStats.total": {
-            $add: [
-              "$contributionStats.wordsAdded",
-              "$contributionStats.wordsEdited",
-              "$contributionStats.wordsReviewed",
-            ],
-          },
-        },
-      },
-      { $sort: sort },
-      { $skip: skip },
-      { $limit: limit },
-      {
-        $project: {
-          name: 1,
-          image: 1,
-          role: 1,
-          bio: 1,
-          isPublic: 1,
-          contributionStats: 1,
-          createdAt: 1,
-        },
-      },
-    ]
+    // Apply pagination
+    const paginatedUsers = users.slice(skip, skip + limit)
+    const totalCount = users.length
 
-    // Fetch users with pagination using aggregation
-    const users = await User.aggregate(pipeline)
-
-    // Get total count for pagination
-    const totalCount = await User.countDocuments(query)
-
-    console.log(`📋 API: Successfully fetched ${users.length} users`)
+    console.log(`📋 API: Successfully fetched ${paginatedUsers.length} users`)
 
     return NextResponse.json({
       success: true,
-      data: users,
+      data: paginatedUsers,
       pagination: {
         total: totalCount,
         page,

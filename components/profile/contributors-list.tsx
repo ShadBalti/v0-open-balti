@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, Search, ChevronLeft, ChevronRight, Lock } from "lucide-react"
-import { toast } from "react-toastify"
+import { toast, ToastContainer } from "react-toastify"
+import "react-toastify/dist/ReactToastify.css"
 import Link from "next/link"
 import { format } from "date-fns"
 
@@ -19,12 +20,14 @@ interface Contributor {
   image?: string
   role: string
   bio?: string
+  location?: string
+  website?: string
   isPublic: boolean
   contributionStats: {
     wordsAdded: number
     wordsEdited: number
     wordsReviewed: number
-    total?: number
+    total: number
   }
   createdAt: string
 }
@@ -79,11 +82,7 @@ export default function ContributorsList() {
   }
 
   const getTotalContributions = (contributor: Contributor) => {
-    if (contributor.contributionStats.total !== undefined) {
-      return contributor.contributionStats.total
-    }
-    const { wordsAdded, wordsEdited, wordsReviewed } = contributor.contributionStats
-    return wordsAdded + wordsEdited + wordsReviewed
+    return contributor.contributionStats?.total || 0
   }
 
   const formatDate = (dateString: string) => {
@@ -162,7 +161,7 @@ export default function ContributorsList() {
                       <div>
                         <div className="flex items-center gap-2">
                           <CardTitle className="text-lg">{contributor.name}</CardTitle>
-                          {!contributor.isPublic && <Lock className="h-3 w-3 text-muted-foreground" />}
+                          {contributor.isPublic === false && <Lock className="h-3 w-3 text-muted-foreground" />}
                         </div>
                         <div className="flex items-center mt-1">
                           <Badge variant="outline" className="text-xs">
@@ -220,6 +219,19 @@ export default function ContributorsList() {
               </div>
             </div>
           )}
+
+          <ToastContainer
+            position="bottom-right"
+            autoClose={3000}
+            hideProgressBar={false}
+            newestOnTop
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="colored"
+          />
         </>
       )}
     </div>

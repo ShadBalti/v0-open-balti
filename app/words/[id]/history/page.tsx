@@ -1,10 +1,10 @@
 import { Suspense } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
-import { generateMetadata as generateHistoryMetadata } from "@/lib/metadata"
+import { generateMetadata as generateBaseMetadata } from "@/lib/metadata"
 import WordHistory from "@/components/word-history"
 
-export async function generateMetadata({ params }: { params: { id: string } }) {
-  return generateHistoryMetadata("Word History", "View the complete history of changes for this word")
+export function generateMetadata({ params }: { params: { id: string } }) {
+  return generateBaseMetadata("Word History", "View the complete history of changes for this word")
 }
 
 export default function WordHistoryPage({ params }: { params: { id: string } }) {

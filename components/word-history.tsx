@@ -8,6 +8,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Loader2, ChevronLeft, ChevronRight, Plus, Edit, Trash2 } from "lucide-react"
+import { ToastContainer } from "react-toastify"
+import "react-toastify/dist/ReactToastify.css"
 import Link from "next/link"
 
 interface WordHistoryProps {
@@ -67,8 +69,8 @@ export default function WordHistory({ wordId }: WordHistoryProps) {
 
       if (result.success) {
         setWord(result.data.word)
-        setHistory(result.data.history)
-        setTotalPages(result.pagination.pages)
+        setHistory(result.data.history || [])
+        setTotalPages(result.pagination.pages || 1)
       } else {
         setError(result.error || "Failed to load word history")
       }
@@ -81,7 +83,11 @@ export default function WordHistory({ wordId }: WordHistoryProps) {
   }
 
   const formatDate = (dateString: string) => {
-    return format(new Date(dateString), "MMM d, yyyy 'at' h:mm a")
+    try {
+      return format(new Date(dateString), "MMM d, yyyy 'at' h:mm a")
+    } catch (error) {
+      return "Invalid date"
+    }
   }
 
   const getActionIcon = (action: string) => {
@@ -288,6 +294,19 @@ export default function WordHistory({ wordId }: WordHistoryProps) {
           )}
         </CardContent>
       </Card>
+
+      <ToastContainer
+        position="bottom-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
     </div>
   )
 }
