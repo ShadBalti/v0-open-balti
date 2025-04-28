@@ -1,6 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import dbConnect from "@/lib/mongodb"
 import Word from "@/models/Word"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 
 export async function GET(req: NextRequest) {
   try {
@@ -31,6 +33,13 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    // Check if user is authenticated
+    const session = await getServerSession(authOptions)
+
+    if (!session) {
+      return NextResponse.json({ success: false, error: "Authentication required" }, { status: 401 })
+    }
+
     console.log("🔄 API: Connecting to MongoDB for creating a word...")
     await dbConnect()
     console.log("✅ API: MongoDB connected for creating a word")

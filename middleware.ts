@@ -7,7 +7,7 @@ export async function middleware(request: NextRequest) {
   const isAuthenticated = !!token
 
   // Define protected routes
-  const protectedRoutes = ["/profile", "/settings"]
+  const protectedRoutes = ["/profile", "/settings", "/review"]
   const adminRoutes = ["/admin"]
 
   // Check if the current path is a protected route

@@ -13,9 +13,10 @@ interface WordListProps {
   direction: "balti-to-english" | "english-to-balti"
   onEdit: (word: IWord) => void
   onDelete: (id: string) => void
+  showActions?: boolean
 }
 
-export default function WordList({ words, direction, onEdit, onDelete }: WordListProps) {
+export default function WordList({ words, direction, onEdit, onDelete, showActions = true }: WordListProps) {
   const [sortField, setSortField] = useState<"balti" | "english">("balti")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
 
@@ -108,7 +109,7 @@ export default function WordList({ words, direction, onEdit, onDelete }: WordLis
                       ))}
                   </div>
                 </TableHead>
-                <TableHead className="w-[10%] text-right">Actions</TableHead>
+                {showActions && <TableHead className="w-[10%] text-right">Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -117,26 +118,28 @@ export default function WordList({ words, direction, onEdit, onDelete }: WordLis
                   <TableCell className="font-medium">{isBaltiToEnglish ? word.balti : word.english}</TableCell>
                   <TableCell>{isBaltiToEnglish ? word.english : word.balti}</TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onEdit(word)}
-                        aria-label="Edit word"
-                        className="h-8 w-8 text-muted-foreground hover:text-primary"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onDelete(word._id)}
-                        aria-label="Delete word"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    {showActions ? (
+                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onEdit(word)}
+                          aria-label="Edit word"
+                          className="h-8 w-8 text-muted-foreground hover:text-primary"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onDelete(word._id)}
+                          aria-label="Delete word"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : null}
                   </TableCell>
                 </TableRow>
               ))}
