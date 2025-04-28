@@ -7,7 +7,7 @@ export async function middleware(request: NextRequest) {
   const isAuthenticated = !!token
 
   // Define protected routes
-  const protectedRoutes = ["/profile", "/settings", "/review"]
+  const protectedRoutes = ["/profile", "/settings", "/review", "/activity"]
   const adminRoutes = ["/admin"]
 
   // Check if the current path is a protected route
@@ -30,5 +30,13 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/profile/:path*", "/settings/:path*", "/admin/:path*", "/review/:path*", "/review"],
+  matcher: [
+    "/profile/:path*",
+    "/settings/:path*",
+    "/admin/:path*",
+    "/review/:path*",
+    "/review",
+    "/activity/:path*",
+    "/activity",
+  ],
 }

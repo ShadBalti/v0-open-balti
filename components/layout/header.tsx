@@ -80,6 +80,15 @@ export function Header() {
                 >
                   Review
                 </Link>
+                <Link
+                  href="/activity"
+                  className={`transition-colors px-2 py-1 rounded-md hover:bg-muted ${
+                    isActive("/activity") ? "text-primary font-medium" : "text-foreground"
+                  }`}
+                  aria-current={isActive("/activity") ? "page" : undefined}
+                >
+                  Activity Log
+                </Link>
               </nav>
             </SheetContent>
           </Sheet>
@@ -125,6 +134,15 @@ export function Header() {
             aria-current={isActive("/review") ? "page" : undefined}
           >
             Review
+          </Link>
+          <Link
+            href="/activity"
+            className={`transition-colors ${
+              isActive("/activity") ? "text-primary font-medium" : "text-muted-foreground hover:text-primary"
+            }`}
+            aria-current={isActive("/activity") ? "page" : undefined}
+          >
+            Activity Log
           </Link>
         </nav>
         <div className="flex items-center gap-2">
