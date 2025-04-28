@@ -8,6 +8,15 @@ export interface IUser extends Document {
   image?: string
   role: "user" | "admin" | "contributor"
   emailVerified?: Date
+  bio?: string
+  location?: string
+  website?: string
+  isPublic: boolean
+  contributionStats: {
+    wordsAdded: number
+    wordsEdited: number
+    wordsReviewed: number
+  }
   createdAt: Date
   updatedAt: Date
 }
@@ -42,6 +51,36 @@ const UserSchema: Schema = new Schema(
     },
     emailVerified: {
       type: Date,
+    },
+    bio: {
+      type: String,
+      maxlength: [500, "Bio should not exceed 500 characters"],
+    },
+    location: {
+      type: String,
+      maxlength: [100, "Location should not exceed 100 characters"],
+    },
+    website: {
+      type: String,
+      maxlength: [200, "Website URL should not exceed 200 characters"],
+    },
+    isPublic: {
+      type: Boolean,
+      default: true,
+    },
+    contributionStats: {
+      wordsAdded: {
+        type: Number,
+        default: 0,
+      },
+      wordsEdited: {
+        type: Number,
+        default: 0,
+      },
+      wordsReviewed: {
+        type: Number,
+        default: 0,
+      },
     },
   },
   {

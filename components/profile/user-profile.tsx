@@ -1,0 +1,249 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { useSession } from "next-auth/react"
+import { useRouter } from "next/navigation"
+import { format } from "date-fns"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Loader2, MapPin, Globe, Calendar, Edit } from "lucide-react"
+import Link from "next/link"
+import ActivityLogList from "@/components/activity/activity-log-list"
+
+interface UserProfileProps {
+  userId: string
+}
+
+interface UserData {
+  id: string
+  name: string
+  email?: string
+  image?: string
+  role: string
+  bio?: string
+  location?: string
+  website?: string
+  contributionStats: {
+    wordsAdded: number
+    wordsEdited: number
+    wordsReviewed: number
+  }
+  createdAt: string
+}
+
+export default function UserProfile({ userId }: UserProfileProps) {
+  const { data: session } = useSession()
+  const router = useRouter()
+  const [user, setUser] = useState<UserData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const isOwnProfile = session?.user?.id === userId
+
+  useEffect(() => {
+    fetchUserProfile()
+  }, [userId])
+
+  const fetchUserProfile = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      const response = await fetch(`/api/users/${userId}`)
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          setError("User not found")
+        } else if (response.status === 403) {
+          setError("This profile is private")
+        } else {
+          setError("Failed to load profile")
+        }
+        return
+      }
+
+      const result = await response.json()
+
+      if (result.success) {
+        setUser(result.data)
+      } else {
+        setError(result.error || "Failed to load profile")
+      }
+    } catch (error) {
+      console.error("Error fetching user profile:", error)
+      setError("Failed to load profile")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const formatDate = (dateString: string) => {
+    return format(new Date(dateString), "MMMM yyyy")
+  }
+
+  const getTotalContributions = () => {
+    if (!user) return 0
+    const { wordsAdded, wordsEdited, wordsReviewed } = user.contributionStats
+    return wordsAdded + wordsEdited + wordsReviewed
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-16">
+        <div className="flex flex-col items-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+          <p className="text-muted-foreground">Loading profile...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardHeader className="text-center">
+          <CardTitle className="text-xl">{error}</CardTitle>
+          <CardDescription>
+            {error === "User not found"
+              ? "The user you're looking for doesn't exist or has been removed."
+              : error === "This profile is private"
+                ? "This user has set their profile to private."
+                : "There was a problem loading this profile."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex justify-center">
+          <Button asChild variant="outline">
+            <Link href="/contributors">View All Contributors</Link>
+          </Button>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (!user) return null
+
+  const initials = user.name
+    ? user.name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+    : "U"
+
+  return (
+    <div className="space-y-8">
+      <Card>
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <Avatar className="h-20 w-20">
+            <AvatarImage src={user.image || ""} alt={user.name} />
+            <AvatarFallback className="text-2xl">{initials}</AvatarFallback>
+          </Avatar>
+          <div className="space-y-1 flex-1">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-between">
+              <div>
+                <CardTitle className="text-2xl">{user.name}</CardTitle>
+                {user.email && isOwnProfile && <CardDescription>{user.email}</CardDescription>}
+              </div>
+              {isOwnProfile && (
+                <Button asChild size="sm" variant="outline">
+                  <Link href="/settings">
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit Profile
+                  </Link>
+                </Button>
+              )}
+            </div>
+            <div className="flex items-center mt-2">
+              <Badge variant="outline" className="mr-2">
+                {user.role === "admin" ? "Administrator" : user.role === "contributor" ? "Contributor" : "Member"}
+              </Badge>
+              <Badge variant="outline" className="bg-primary/10 text-primary">
+                {getTotalContributions()} Contributions
+              </Badge>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {user.bio && (
+            <div>
+              <p className="whitespace-pre-line">{user.bio}</p>
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+            {user.location && (
+              <div className="flex items-center">
+                <MapPin className="h-4 w-4 mr-1" />
+                {user.location}
+              </div>
+            )}
+            {user.website && (
+              <div className="flex items-center">
+                <Globe className="h-4 w-4 mr-1" />
+                <a
+                  href={user.website.startsWith("http") ? user.website : `https://${user.website}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:underline text-primary"
+                >
+                  {user.website.replace(/^https?:\/\//, "")}
+                </a>
+              </div>
+            )}
+            <div className="flex items-center">
+              <Calendar className="h-4 w-4 mr-1" />
+              Joined {formatDate(user.createdAt)}
+            </div>
+          </div>
+
+          <div className="pt-4 border-t">
+            <h3 className="text-lg font-medium mb-4">Contribution Statistics</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-3xl font-bold text-center text-green-600 dark:text-green-400">
+                    {user.contributionStats.wordsAdded}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-center">
+                  <p className="text-sm text-muted-foreground">Words Added</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-3xl font-bold text-center text-blue-600 dark:text-blue-400">
+                    {user.contributionStats.wordsEdited}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-center">
+                  <p className="text-sm text-muted-foreground">Words Edited</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-3xl font-bold text-center text-purple-600 dark:text-purple-400">
+                    {user.contributionStats.wordsReviewed}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-center">
+                  <p className="text-sm text-muted-foreground">Words Reviewed</p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Tabs defaultValue="activity" className="w-full">
+        <TabsList className="grid w-full grid-cols-1">
+          <TabsTrigger value="activity">Recent Activity</TabsTrigger>
+        </TabsList>
+        <TabsContent value="activity" className="mt-6">
+          <ActivityLogList userId={userId} limit={10} />
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}

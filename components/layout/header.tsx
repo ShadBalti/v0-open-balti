@@ -72,6 +72,15 @@ export function Header() {
                   Contribute
                 </Link>
                 <Link
+                  href="/contributors"
+                  className={`transition-colors px-2 py-1 rounded-md hover:bg-muted ${
+                    isActive("/contributors") ? "text-primary font-medium" : "text-foreground"
+                  }`}
+                  aria-current={isActive("/contributors") ? "page" : undefined}
+                >
+                  Contributors
+                </Link>
+                <Link
                   href="/review"
                   className={`transition-colors px-2 py-1 rounded-md hover:bg-muted ${
                     isActive("/review") ? "text-primary font-medium" : "text-foreground"
@@ -125,6 +134,15 @@ export function Header() {
             aria-current={isActive("/contribute") ? "page" : undefined}
           >
             Contribute
+          </Link>
+          <Link
+            href="/contributors"
+            className={`transition-colors ${
+              isActive("/contributors") ? "text-primary font-medium" : "text-muted-foreground hover:text-primary"
+            }`}
+            aria-current={isActive("/contributors") ? "page" : undefined}
+          >
+            Contributors
           </Link>
           <Link
             href="/review"
