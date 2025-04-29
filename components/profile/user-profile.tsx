@@ -177,29 +177,29 @@ export default function UserProfile({ userId }: UserProfileProps) {
   return (
     <div className="space-y-8">
       <Card className={isOwner ? "border-amber-500 shadow-amber-100 dark:shadow-none" : ""}>
-        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 sm:p-6">
           <div className="relative">
-            <Avatar className={`h-20 w-20 ${isOwner ? "ring-2 ring-amber-500" : ""}`}>
+            <Avatar className={`h-16 w-16 sm:h-20 sm:w-20 ${isOwner ? "ring-2 ring-amber-500" : ""}`}>
               <AvatarImage src={user.image || ""} alt={user.name} />
-              <AvatarFallback className="text-2xl">{initials}</AvatarFallback>
+              <AvatarFallback className="text-xl sm:text-2xl">{initials}</AvatarFallback>
             </Avatar>
             {isOwner && (
               <div className="absolute -bottom-1 -right-1 bg-white dark:bg-background rounded-full p-0.5">
-                <Star className="h-5 w-5 text-amber-500 fill-amber-500" />
+                <Star className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500 fill-amber-500" />
               </div>
             )}
           </div>
           <div className="space-y-1 flex-1">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-between">
               <div>
-                <div className="flex items-center gap-1.5">
-                  <CardTitle className="text-2xl">{user.name}</CardTitle>
-                  {user.isVerified && <VerificationBadge />}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <CardTitle className="text-xl sm:text-2xl">{user.name}</CardTitle>
+                  {user.isVerified && <VerificationBadge size="sm" className="sm:h-4 sm:w-4" />}
                 </div>
                 {user.email && (isOwnProfile || isAdmin) && <CardDescription>{user.email}</CardDescription>}
               </div>
               {isOwnProfile && (
-                <Button asChild size="sm" variant="outline">
+                <Button asChild size="sm" variant="outline" className="mt-2 sm:mt-0">
                   <Link href="/settings">
                     <Edit className="h-4 w-4 mr-2" />
                     Edit Profile
@@ -208,8 +208,8 @@ export default function UserProfile({ userId }: UserProfileProps) {
               )}
             </div>
             <div className="flex flex-wrap items-center gap-2 mt-2">
-              {isOwner && <FounderBadge />}
-              <Badge variant="outline" className="mr-2">
+              {isOwner && <FounderBadge size="sm" className="sm:text-xs" />}
+              <Badge variant="outline" className="text-xs">
                 {user.role === "owner"
                   ? "Owner"
                   : user.role === "admin"
@@ -218,29 +218,29 @@ export default function UserProfile({ userId }: UserProfileProps) {
                       ? "Contributor"
                       : "Member"}
               </Badge>
-              <Badge variant="outline" className="bg-primary/10 text-primary">
+              <Badge variant="outline" className="bg-primary/10 text-primary text-xs">
                 {getTotalContributions()} Contributions
               </Badge>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 p-4 sm:p-6">
           {user.bio && (
             <div>
-              <p className="whitespace-pre-line">{user.bio}</p>
+              <p className="whitespace-pre-line text-sm sm:text-base">{user.bio}</p>
             </div>
           )}
 
-          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+          <div className="flex flex-wrap gap-4 text-xs sm:text-sm text-muted-foreground">
             {user.location && (
               <div className="flex items-center">
-                <MapPin className="h-4 w-4 mr-1" />
+                <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                 {user.location}
               </div>
             )}
             {user.website && (
               <div className="flex items-center">
-                <Globe className="h-4 w-4 mr-1" />
+                <Globe className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                 <a
                   href={user.website.startsWith("http") ? user.website : `https://${user.website}`}
                   target="_blank"
@@ -253,19 +253,19 @@ export default function UserProfile({ userId }: UserProfileProps) {
             )}
             {user.createdAt && (
               <div className="flex items-center">
-                <Calendar className="h-4 w-4 mr-1" />
+                <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                 Joined {formatDate(user.createdAt)}
               </div>
             )}
           </div>
 
           {isOwner && (
-            <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800">
-              <h3 className="text-sm font-medium flex items-center gap-1.5 text-amber-800 dark:text-amber-300">
-                <Crown className="h-4 w-4" />
+            <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/20 p-3 sm:p-4 rounded-lg border border-amber-200 dark:border-amber-800">
+              <h3 className="text-xs sm:text-sm font-medium flex items-center gap-1.5 text-amber-800 dark:text-amber-300">
+                <Crown className="h-3 w-3 sm:h-4 sm:w-4" />
                 Founder & Owner
               </h3>
-              <p className="text-sm mt-1 text-amber-700 dark:text-amber-400">
+              <p className="text-xs sm:text-sm mt-1 text-amber-700 dark:text-amber-400">
                 This account belongs to the founder and owner of OpenBalti. They created this platform to preserve and
                 promote the Balti language.
               </p>
@@ -273,36 +273,36 @@ export default function UserProfile({ userId }: UserProfileProps) {
           )}
 
           <div className="pt-4 border-t">
-            <h3 className="text-lg font-medium mb-4">Contribution Statistics</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <h3 className="text-base sm:text-lg font-medium mb-3 sm:mb-4">Contribution Statistics</h3>
+            <div className="grid grid-cols-3 gap-2 sm:gap-4">
               <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-3xl font-bold text-center text-green-600 dark:text-green-400">
+                <CardHeader className="p-2 sm:pb-2">
+                  <CardTitle className="text-lg sm:text-3xl font-bold text-center text-green-600 dark:text-green-400">
                     {user.contributionStats?.wordsAdded || 0}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="text-center">
-                  <p className="text-sm text-muted-foreground">Words Added</p>
+                <CardContent className="text-center p-2">
+                  <p className="text-xs sm:text-sm text-muted-foreground">Words Added</p>
                 </CardContent>
               </Card>
               <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-3xl font-bold text-center text-blue-600 dark:text-blue-400">
+                <CardHeader className="p-2 sm:pb-2">
+                  <CardTitle className="text-lg sm:text-3xl font-bold text-center text-blue-600 dark:text-blue-400">
                     {user.contributionStats?.wordsEdited || 0}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="text-center">
-                  <p className="text-sm text-muted-foreground">Words Edited</p>
+                <CardContent className="text-center p-2">
+                  <p className="text-xs sm:text-sm text-muted-foreground">Words Edited</p>
                 </CardContent>
               </Card>
               <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-3xl font-bold text-center text-purple-600 dark:text-purple-400">
+                <CardHeader className="p-2 sm:pb-2">
+                  <CardTitle className="text-lg sm:text-3xl font-bold text-center text-purple-600 dark:text-purple-400">
                     {user.contributionStats?.wordsReviewed || 0}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="text-center">
-                  <p className="text-sm text-muted-foreground">Words Reviewed</p>
+                <CardContent className="text-center p-2">
+                  <p className="text-xs sm:text-sm text-muted-foreground">Words Reviewed</p>
                 </CardContent>
               </Card>
             </div>

@@ -12,6 +12,7 @@ import { Loader2, Search, ChevronLeft, ChevronRight, Lock, AlertTriangle } from 
 import { toast } from "react-toastify"
 import Link from "next/link"
 import { format } from "date-fns"
+import { VerificationBadge } from "@/components/ui/verification-badge"
 
 interface Contributor {
   _id: string
@@ -20,6 +21,8 @@ interface Contributor {
   role: string
   bio?: string
   isPublic: boolean
+  isVerified?: boolean
+  isFounder?: boolean
   contributionStats: {
     wordsAdded: number
     wordsEdited: number
@@ -115,11 +118,11 @@ export default function ContributorsList() {
 
   if (error) {
     return (
-      <Card className="p-6">
+      <Card className="p-4 sm:p-6">
         <div className="flex flex-col items-center justify-center text-center space-y-4">
-          <AlertTriangle className="h-12 w-12 text-amber-500" />
-          <h3 className="text-xl font-semibold">Error Loading Contributors</h3>
-          <p className="text-muted-foreground">{error}</p>
+          <AlertTriangle className="h-10 w-10 sm:h-12 sm:w-12 text-amber-500" />
+          <h3 className="text-lg sm:text-xl font-semibold">Error Loading Contributors</h3>
+          <p className="text-muted-foreground text-sm sm:text-base">{error}</p>
           <Button onClick={() => fetchContributors()}>Try Again</Button>
         </div>
       </Card>
@@ -129,7 +132,7 @@ export default function ContributorsList() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between gap-4">
-        <div className="relative flex-1 max-w-md">
+        <div className="relative flex-1 max-w-full sm:max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="text"
@@ -141,7 +144,7 @@ export default function ContributorsList() {
         </div>
         <div className="flex gap-2">
           <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
@@ -154,7 +157,7 @@ export default function ContributorsList() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center items-center py-16">
+        <div className="flex justify-center items-center py-12 sm:py-16">
           <div className="flex flex-col items-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
             <p className="text-muted-foreground">Loading contributors...</p>
@@ -175,7 +178,7 @@ export default function ContributorsList() {
         </Card>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {contributors.map((contributor) => {
               const initials = contributor.name
                 ? contributor.name
@@ -186,37 +189,48 @@ export default function ContributorsList() {
                 : "U"
 
               const totalContributions = getTotalContributions(contributor)
+              const isOwner = contributor.role === "owner" || contributor.isFounder
 
               return (
-                <Card key={contributor._id} className="overflow-hidden hover:shadow-md transition-shadow">
+                <Card
+                  key={contributor._id}
+                  className={`overflow-hidden hover:shadow-md transition-shadow ${
+                    isOwner ? "border-amber-500/50" : ""
+                  }`}
+                >
                   <Link href={`/users/${contributor._id}`} className="block h-full">
-                    <CardHeader className="flex flex-row items-center gap-4 pb-2">
-                      <Avatar className="h-12 w-12">
+                    <CardHeader className="flex flex-row items-center gap-3 sm:gap-4 p-3 sm:pb-2">
+                      <Avatar className={`h-10 w-10 sm:h-12 sm:w-12 ${isOwner ? "ring-1 ring-amber-500" : ""}`}>
                         <AvatarImage src={contributor.image || ""} alt={contributor.name} />
                         <AvatarFallback>{initials}</AvatarFallback>
                       </Avatar>
                       <div>
-                        <div className="flex items-center gap-2">
-                          <CardTitle className="text-lg">{contributor.name}</CardTitle>
+                        <div className="flex items-center gap-1 sm:gap-2">
+                          <CardTitle className="text-base sm:text-lg">{contributor.name}</CardTitle>
+                          {contributor.isVerified && <VerificationBadge size="sm" />}
                           {!contributor.isPublic && <Lock className="h-3 w-3 text-muted-foreground" />}
                         </div>
-                        <div className="flex items-center mt-1">
-                          <Badge variant="outline" className="text-xs">
-                            {contributor.role === "admin"
-                              ? "Administrator"
-                              : contributor.role === "contributor"
-                                ? "Contributor"
-                                : "Member"}
+                        <div className="flex items-center mt-1 flex-wrap gap-1">
+                          <Badge variant="outline" className="text-xs px-1.5 py-0 h-5">
+                            {contributor.role === "owner"
+                              ? "Owner"
+                              : contributor.role === "admin"
+                                ? "Admin"
+                                : contributor.role === "contributor"
+                                  ? "Contributor"
+                                  : "Member"}
                           </Badge>
                         </div>
                       </div>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-3 pt-0 sm:p-4 sm:pt-0">
                       {contributor.bio && (
-                        <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{contributor.bio}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 mb-2 sm:mb-3">
+                          {contributor.bio}
+                        </p>
                       )}
                       <div className="flex justify-between items-center">
-                        <Badge variant="outline" className="bg-primary/10 text-primary">
+                        <Badge variant="outline" className="bg-primary/10 text-primary text-xs">
                           {totalContributions} Contributions
                         </Badge>
                         <span className="text-xs text-muted-foreground">
@@ -232,7 +246,7 @@ export default function ContributorsList() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex justify-center mt-8">
+            <div className="flex justify-center mt-6 sm:mt-8">
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"

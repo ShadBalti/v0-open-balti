@@ -72,8 +72,7 @@
     "@auth/mongodb-adapter": "latest",
     "bcryptjs": "latest",
     "react-toastify": "latest",
-    "mongoose": "latest",
-    "dotenv": "latest"
+    "mongoose": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",

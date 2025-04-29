@@ -17,7 +17,9 @@ export function FounderBadge({ className, showLabel = true, size = "md" }: Found
 
   if (showLabel) {
     return (
-      <Badge className={cn("bg-gradient-to-r from-amber-500 to-yellow-300 text-black font-medium", className)}>
+      <Badge
+        className={cn("bg-gradient-to-r from-amber-500 to-yellow-300 text-black font-medium text-xs py-0.5", className)}
+      >
         <Crown className={cn("mr-1", sizeClasses[size])} />
         Founder & Owner
       </Badge>

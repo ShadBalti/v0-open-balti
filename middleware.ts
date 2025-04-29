@@ -10,12 +10,9 @@ export async function middleware(request: NextRequest) {
   const protectedRoutes = ["/profile", "/settings", "/review", "/activity"]
   const adminRoutes = ["/admin"]
 
-  // Special case for the set-owner page
-  const isSetOwnerPage = request.nextUrl.pathname === "/admin/set-owner"
-
   // Check if the current path is a protected route
   const isProtectedRoute = protectedRoutes.some((route) => request.nextUrl.pathname.startsWith(route))
-  const isAdminRoute = adminRoutes.some((route) => request.nextUrl.pathname.startsWith(route)) && !isSetOwnerPage
+  const isAdminRoute = adminRoutes.some((route) => request.nextUrl.pathname.startsWith(route))
 
   // Redirect to login if accessing a protected route without authentication
   if (isProtectedRoute && !isAuthenticated) {
@@ -25,7 +22,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Redirect to home if accessing an admin route without admin role
-  if (isAdminRoute && (!isAuthenticated || token?.role !== "admin")) {
+  if (isAdminRoute && (!isAuthenticated || (token?.role !== "admin" && token?.role !== "owner"))) {
     return NextResponse.redirect(new URL("/", request.url))
   }
 
