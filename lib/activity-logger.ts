@@ -55,26 +55,21 @@ export async function logActivity({
 
     // Log to word history for create, update, delete actions
     if (["create", "update", "delete"].includes(action) && wordId && wordBalti && wordEnglish) {
-      try {
-        // Get user details for the history record
-        const user = await User.findById(session.user.id).select("name image").lean()
+      // Get user details for the history record
+      const user = await User.findById(session.user.id).select("name image").lean()
 
-        await WordHistory.create({
-          wordId,
-          balti: wordBalti,
-          english: wordEnglish,
-          action: action as "create" | "update" | "delete",
-          userId: session.user.id,
-          userName: user?.name || session.user.name || "",
-          userImage: user?.image || session.user.image || "",
-          details,
-        })
+      await WordHistory.create({
+        wordId,
+        balti: wordBalti,
+        english: wordEnglish,
+        action: action as "create" | "update" | "delete",
+        userId: session.user.id,
+        userName: user?.name || session.user.name,
+        userImage: user?.image || session.user.image,
+        details,
+      })
 
-        console.log(`✅ Word history logged: ${action} for word ${wordId}`)
-      } catch (historyError) {
-        console.error("❌ Error logging word history:", historyError)
-        // Continue execution even if word history logging fails
-      }
+      console.log(`✅ Word history logged: ${action} for word ${wordId}`)
     }
   } catch (error) {
     console.error("❌ Error logging activity:", error)

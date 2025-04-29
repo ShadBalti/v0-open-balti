@@ -34,9 +34,9 @@ export const config = {
     "/profile/:path*",
     "/settings/:path*",
     "/admin/:path*",
-    "/review/:path*",
     "/review",
-    "/activity/:path*",
+    "/review/:path*",
     "/activity",
+    "/activity/:path*",
   ],
 }

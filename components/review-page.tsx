@@ -46,6 +46,7 @@ export default function ReviewPage() {
   useEffect(() => {
     // If not authenticated and authentication check is complete, redirect to login
     if (status === "unauthenticated") {
+      toast.error("You need to be signed in to access the review page.")
       router.push("/auth/signin?callbackUrl=/review")
       return
     }
@@ -194,6 +195,18 @@ export default function ReviewPage() {
         }),
       })
 
+      if (response.status === 401) {
+        toast.error("Your session has expired. Please log in again.")
+        router.push("/auth/signin?callbackUrl=/review")
+        return false
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        toast.error(errorData.error || `Error: ${response.statusText}`)
+        return false
+      }
+
       const result = await response.json()
 
       if (result.success) {
@@ -204,14 +217,8 @@ export default function ReviewPage() {
 
         return true
       } else {
-        if (result.error === "Authentication required") {
-          toast.error("Your session has expired. Please log in again.")
-          router.push("/auth/signin?callbackUrl=/review")
-          return false
-        } else {
-          toast.error(result.error || "Failed to update review status")
-          return false
-        }
+        toast.error(result.error || "Failed to update review status")
+        return false
       }
     } catch (error) {
       console.error("Error updating review status:", error)

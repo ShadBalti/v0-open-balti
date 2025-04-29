@@ -43,6 +43,7 @@ export default function ActivityLogList({ userId, wordId, limit = 10 }: Activity
 
   useEffect(() => {
     if (status === "unauthenticated") {
+      toast.error("You need to be signed in to access the activity log.")
       router.push("/auth/signin?callbackUrl=/activity")
       return
     }
@@ -73,7 +74,8 @@ export default function ActivityLogList({ userId, wordId, limit = 10 }: Activity
           router.push("/auth/signin?callbackUrl=/activity")
           return
         }
-        throw new Error("Failed to fetch activity logs")
+        toast.error(`Error: ${response.statusText || "Failed to fetch activity logs"}`)
+        return
       }
 
       const result = await response.json()
@@ -86,7 +88,7 @@ export default function ActivityLogList({ userId, wordId, limit = 10 }: Activity
       }
     } catch (error) {
       console.error("Error fetching activity logs:", error)
-      toast.error("Failed to fetch activity logs")
+      toast.error("Failed to fetch activity logs. Please try again later.")
     } finally {
       setLoading(false)
     }

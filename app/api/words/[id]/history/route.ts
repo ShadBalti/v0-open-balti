@@ -2,19 +2,12 @@ import { type NextRequest, NextResponse } from "next/server"
 import dbConnect from "@/lib/mongodb"
 import WordHistory from "@/models/WordHistory"
 import Word from "@/models/Word"
-import mongoose from "mongoose"
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     console.log(`🔄 API: Connecting to MongoDB for fetching history of word ID: ${params.id}...`)
     await dbConnect()
     console.log(`✅ API: MongoDB connected for fetching history of word ID: ${params.id}`)
-
-    // Validate the ID format
-    if (!mongoose.Types.ObjectId.isValid(params.id)) {
-      console.log(`⚠️ API: Invalid word ID format: ${params.id}`)
-      return NextResponse.json({ success: false, error: "Invalid word ID format" }, { status: 400 })
-    }
 
     // First check if the word exists
     const word = await Word.findById(params.id)

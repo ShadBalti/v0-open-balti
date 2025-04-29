@@ -35,7 +35,7 @@ interface UserData {
 }
 
 export default function UserProfile({ userId }: UserProfileProps) {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const router = useRouter()
   const [user, setUser] = useState<UserData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -46,6 +46,14 @@ export default function UserProfile({ userId }: UserProfileProps) {
     fetchUserProfile()
   }, [userId])
 
+  // Add proper handling for when the user profile data doesn't load due to authentication issues
+  useEffect(() => {
+    if (status === "unauthenticated" && (error === "Authentication required" || error?.includes("sign in"))) {
+      router.push("/auth/signin?callbackUrl=" + encodeURIComponent(`/users/${userId}`))
+    }
+  }, [error, status, router, userId])
+
+  // Update the fetchUserProfile function to better handle authentication errors
   const fetchUserProfile = async () => {
     try {
       setLoading(true)
@@ -54,12 +62,14 @@ export default function UserProfile({ userId }: UserProfileProps) {
       const response = await fetch(`/api/users/${userId}`)
 
       if (!response.ok) {
-        if (response.status === 404) {
-          setError("User not found")
+        if (response.status === 401) {
+          setError("Authentication required. Please sign in.")
         } else if (response.status === 403) {
           setError("This profile is private")
+        } else if (response.status === 404) {
+          setError("User not found")
         } else {
-          setError("Failed to load profile")
+          setError(`Failed to load profile: ${response.statusText}`)
         }
         return
       }
@@ -73,7 +83,7 @@ export default function UserProfile({ userId }: UserProfileProps) {
       }
     } catch (error) {
       console.error("Error fetching user profile:", error)
-      setError("Failed to load profile")
+      setError("Failed to load profile. Please try again later.")
     } finally {
       setLoading(false)
     }

@@ -8,8 +8,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Loader2, ChevronLeft, ChevronRight, Plus, Edit, Trash2 } from "lucide-react"
-import { ToastContainer } from "react-toastify"
-import "react-toastify/dist/ReactToastify.css"
 import Link from "next/link"
 
 interface WordHistoryProps {
@@ -49,6 +47,7 @@ export default function WordHistory({ wordId }: WordHistoryProps) {
     fetchWordHistory()
   }, [wordId, page])
 
+  // Improve error handling for API requests
   const fetchWordHistory = async () => {
     try {
       setLoading(true)
@@ -57,10 +56,13 @@ export default function WordHistory({ wordId }: WordHistoryProps) {
       const response = await fetch(`/api/words/${wordId}/history?page=${page}`)
 
       if (!response.ok) {
-        if (response.status === 404) {
+        if (response.status === 401) {
+          setError("Authentication required. Please sign in.")
+          return
+        } else if (response.status === 404) {
           setError("Word not found")
         } else {
-          setError("Failed to load word history")
+          setError(`Failed to load word history: ${response.statusText}`)
         }
         return
       }
@@ -69,25 +71,21 @@ export default function WordHistory({ wordId }: WordHistoryProps) {
 
       if (result.success) {
         setWord(result.data.word)
-        setHistory(result.data.history || [])
-        setTotalPages(result.pagination.pages || 1)
+        setHistory(result.data.history)
+        setTotalPages(result.pagination.pages)
       } else {
         setError(result.error || "Failed to load word history")
       }
     } catch (error) {
       console.error("Error fetching word history:", error)
-      setError("Failed to load word history")
+      setError("Failed to load word history. Please try again later.")
     } finally {
       setLoading(false)
     }
   }
 
   const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), "MMM d, yyyy 'at' h:mm a")
-    } catch (error) {
-      return "Invalid date"
-    }
+    return format(new Date(dateString), "MMM d, yyyy 'at' h:mm a")
   }
 
   const getActionIcon = (action: string) => {
@@ -294,19 +292,6 @@ export default function WordHistory({ wordId }: WordHistoryProps) {
           )}
         </CardContent>
       </Card>
-
-      <ToastContainer
-        position="bottom-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="colored"
-      />
     </div>
   )
 }
