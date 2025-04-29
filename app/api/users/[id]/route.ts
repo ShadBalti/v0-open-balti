@@ -14,6 +14,12 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const isOwnProfile = session?.user?.id === params.id
     const isAdmin = session?.user?.role === "admin"
 
+    // Validate the user ID format to prevent MongoDB errors
+    if (!params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      console.log(`⚠️ API: Invalid user ID format: ${params.id}`)
+      return NextResponse.json({ success: false, error: "User not found" }, { status: 404 })
+    }
+
     // Find the user
     const user = await User.findById(params.id).select("-password")
 
@@ -23,22 +29,29 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     }
 
     // If the profile is not public and the requester is not the owner or an admin
-    if (!user.isPublic && !isOwnProfile && !isAdmin) {
+    if (user.isPublic === false && !isOwnProfile && !isAdmin) {
       return NextResponse.json({ success: false, error: "This profile is private" }, { status: 403 })
+    }
+
+    // Ensure contributionStats exists with default values
+    const contributionStats = user.contributionStats || {
+      wordsAdded: 0,
+      wordsEdited: 0,
+      wordsReviewed: 0,
     }
 
     // Prepare the response data
     const userData = {
       id: user._id,
-      name: user.name,
+      name: user.name || "Anonymous User",
       image: user.image,
-      role: user.role,
+      role: user.role || "user",
       bio: user.bio,
       location: user.location,
       website: user.website,
-      isPublic: user.isPublic,
-      contributionStats: user.contributionStats,
-      createdAt: user.createdAt,
+      isPublic: user.isPublic !== false, // Default to true if not specified
+      contributionStats,
+      createdAt: user.createdAt || new Date().toISOString(),
       // Only include email if it's the user's own profile or an admin
       ...(isOwnProfile || isAdmin ? { email: user.email } : {}),
     }
@@ -63,6 +76,11 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     // Only allow users to update their own profile (or admins)
     if (session.user.id !== params.id && session.user.role !== "admin") {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 })
+    }
+
+    // Validate the user ID format
+    if (!params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      return NextResponse.json({ success: false, error: "Invalid user ID format" }, { status: 400 })
     }
 
     console.log(`🔄 API: Connecting to MongoDB for updating user ID: ${params.id}...`)

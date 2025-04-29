@@ -13,7 +13,8 @@ interface ErrorBoundaryProps {
   children: React.ReactNode
 }
 
-export default function ErrorBoundary({ error, reset, fallback, children }: ErrorBoundaryProps) {
+// Export the component as a named export
+export function ErrorBoundary({ error, reset, fallback, children }: ErrorBoundaryProps) {
   const [hasError, setHasError] = useState<boolean>(!!error)
 
   useEffect(() => {
@@ -59,3 +60,6 @@ export default function ErrorBoundary({ error, reset, fallback, children }: Erro
 
   return <>{children}</>
 }
+
+// Also export as default for backward compatibility
+export default ErrorBoundary

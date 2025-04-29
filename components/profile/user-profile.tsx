@@ -9,9 +9,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, MapPin, Globe, Calendar, Edit } from "lucide-react"
+import { Loader2, MapPin, Globe, Calendar, Edit, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import ActivityLogList from "@/components/activity/activity-log-list"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 interface UserProfileProps {
   userId: string
@@ -26,6 +27,7 @@ interface UserData {
   bio?: string
   location?: string
   website?: string
+  isPublic?: boolean
   contributionStats: {
     wordsAdded: number
     wordsEdited: number
@@ -40,20 +42,16 @@ export default function UserProfile({ userId }: UserProfileProps) {
   const [user, setUser] = useState<UserData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
   const isOwnProfile = session?.user?.id === userId
+  const isAdmin = session?.user?.role === "admin"
 
   useEffect(() => {
-    fetchUserProfile()
-  }, [userId])
-
-  // Add proper handling for when the user profile data doesn't load due to authentication issues
-  useEffect(() => {
-    if (status === "unauthenticated" && (error === "Authentication required" || error?.includes("sign in"))) {
-      router.push("/auth/signin?callbackUrl=" + encodeURIComponent(`/users/${userId}`))
+    if (userId) {
+      fetchUserProfile()
     }
-  }, [error, status, router, userId])
+  }, [userId, retryCount])
 
-  // Update the fetchUserProfile function to better handle authentication errors
   const fetchUserProfile = async () => {
     try {
       setLoading(true)
@@ -64,12 +62,16 @@ export default function UserProfile({ userId }: UserProfileProps) {
       if (!response.ok) {
         if (response.status === 401) {
           setError("Authentication required. Please sign in.")
+          if (status === "unauthenticated") {
+            router.push(`/auth/signin?callbackUrl=${encodeURIComponent(`/users/${userId}`)}`)
+            return
+          }
         } else if (response.status === 403) {
           setError("This profile is private")
         } else if (response.status === 404) {
           setError("User not found")
         } else {
-          setError(`Failed to load profile: ${response.statusText}`)
+          setError(`Failed to load profile: ${response.statusText || "Unknown error"}`)
         }
         return
       }
@@ -89,13 +91,22 @@ export default function UserProfile({ userId }: UserProfileProps) {
     }
   }
 
+  const handleRetry = () => {
+    setRetryCount((prev) => prev + 1)
+  }
+
   const formatDate = (dateString: string) => {
-    return format(new Date(dateString), "MMMM yyyy")
+    try {
+      return format(new Date(dateString), "MMMM yyyy")
+    } catch (error) {
+      console.error("Error formatting date:", error)
+      return "Unknown date"
+    }
   }
 
   const getTotalContributions = () => {
-    if (!user) return 0
-    const { wordsAdded, wordsEdited, wordsReviewed } = user.contributionStats
+    if (!user || !user.contributionStats) return 0
+    const { wordsAdded = 0, wordsEdited = 0, wordsReviewed = 0 } = user.contributionStats
     return wordsAdded + wordsEdited + wordsReviewed
   }
 
@@ -114,7 +125,10 @@ export default function UserProfile({ userId }: UserProfileProps) {
     return (
       <Card>
         <CardHeader className="text-center">
-          <CardTitle className="text-xl">{error}</CardTitle>
+          <CardTitle className="text-xl flex items-center justify-center gap-2">
+            <AlertCircle className="h-5 w-5 text-destructive" />
+            {error}
+          </CardTitle>
           <CardDescription>
             {error === "User not found"
               ? "The user you're looking for doesn't exist or has been removed."
@@ -123,8 +137,11 @@ export default function UserProfile({ userId }: UserProfileProps) {
                 : "There was a problem loading this profile."}
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex justify-center">
-          <Button asChild variant="outline">
+        <CardContent className="flex flex-col items-center gap-4">
+          <Button onClick={handleRetry} variant="outline">
+            Try Again
+          </Button>
+          <Button asChild variant="ghost">
             <Link href="/contributors">View All Contributors</Link>
           </Button>
         </CardContent>
@@ -132,7 +149,17 @@ export default function UserProfile({ userId }: UserProfileProps) {
     )
   }
 
-  if (!user) return null
+  if (!user) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>
+          Could not load user data. Please try again later or contact support if the problem persists.
+        </AlertDescription>
+      </Alert>
+    )
+  }
 
   const initials = user.name
     ? user.name
@@ -154,7 +181,7 @@ export default function UserProfile({ userId }: UserProfileProps) {
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-between">
               <div>
                 <CardTitle className="text-2xl">{user.name}</CardTitle>
-                {user.email && isOwnProfile && <CardDescription>{user.email}</CardDescription>}
+                {user.email && (isOwnProfile || isAdmin) && <CardDescription>{user.email}</CardDescription>}
               </div>
               {isOwnProfile && (
                 <Button asChild size="sm" variant="outline">
@@ -202,10 +229,12 @@ export default function UserProfile({ userId }: UserProfileProps) {
                 </a>
               </div>
             )}
-            <div className="flex items-center">
-              <Calendar className="h-4 w-4 mr-1" />
-              Joined {formatDate(user.createdAt)}
-            </div>
+            {user.createdAt && (
+              <div className="flex items-center">
+                <Calendar className="h-4 w-4 mr-1" />
+                Joined {formatDate(user.createdAt)}
+              </div>
+            )}
           </div>
 
           <div className="pt-4 border-t">
@@ -214,7 +243,7 @@ export default function UserProfile({ userId }: UserProfileProps) {
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-3xl font-bold text-center text-green-600 dark:text-green-400">
-                    {user.contributionStats.wordsAdded}
+                    {user.contributionStats?.wordsAdded || 0}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
@@ -224,7 +253,7 @@ export default function UserProfile({ userId }: UserProfileProps) {
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-3xl font-bold text-center text-blue-600 dark:text-blue-400">
-                    {user.contributionStats.wordsEdited}
+                    {user.contributionStats?.wordsEdited || 0}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
@@ -234,7 +263,7 @@ export default function UserProfile({ userId }: UserProfileProps) {
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-3xl font-bold text-center text-purple-600 dark:text-purple-400">
-                    {user.contributionStats.wordsReviewed}
+                    {user.contributionStats?.wordsReviewed || 0}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
