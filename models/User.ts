@@ -6,12 +6,14 @@ export interface IUser extends Document {
   email: string
   password: string
   image?: string
-  role: "user" | "admin" | "contributor"
+  role: "user" | "admin" | "contributor" | "owner"
   emailVerified?: Date
   bio?: string
   location?: string
   website?: string
   isPublic: boolean
+  isVerified: boolean
+  isFounder: boolean
   contributionStats: {
     wordsAdded: number
     wordsEdited: number
@@ -46,7 +48,7 @@ const UserSchema: Schema = new Schema(
     },
     role: {
       type: String,
-      enum: ["user", "admin", "contributor"],
+      enum: ["user", "admin", "contributor", "owner"],
       default: "user",
     },
     emailVerified: {
@@ -67,6 +69,14 @@ const UserSchema: Schema = new Schema(
     isPublic: {
       type: Boolean,
       default: true,
+    },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    isFounder: {
+      type: Boolean,
+      default: false,
     },
     contributionStats: {
       wordsAdded: {

@@ -9,10 +9,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, MapPin, Globe, Calendar, Edit, AlertCircle } from "lucide-react"
+import { Loader2, MapPin, Globe, Calendar, Edit, AlertCircle, Star, Crown } from "lucide-react"
 import Link from "next/link"
 import ActivityLogList from "@/components/activity/activity-log-list"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { VerificationBadge } from "@/components/ui/verification-badge"
+import { FounderBadge } from "@/components/ui/founder-badge"
 
 interface UserProfileProps {
   userId: string
@@ -28,6 +30,8 @@ interface UserData {
   location?: string
   website?: string
   isPublic?: boolean
+  isVerified?: boolean
+  isFounder?: boolean
   contributionStats: {
     wordsAdded: number
     wordsEdited: number
@@ -45,6 +49,7 @@ export default function UserProfile({ userId }: UserProfileProps) {
   const [retryCount, setRetryCount] = useState(0)
   const isOwnProfile = session?.user?.id === userId
   const isAdmin = session?.user?.role === "admin"
+  const isOwner = user?.role === "owner" || user?.isFounder
 
   useEffect(() => {
     if (userId) {
@@ -171,16 +176,26 @@ export default function UserProfile({ userId }: UserProfileProps) {
 
   return (
     <div className="space-y-8">
-      <Card>
+      <Card className={isOwner ? "border-amber-500 shadow-amber-100 dark:shadow-none" : ""}>
         <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          <Avatar className="h-20 w-20">
-            <AvatarImage src={user.image || ""} alt={user.name} />
-            <AvatarFallback className="text-2xl">{initials}</AvatarFallback>
-          </Avatar>
+          <div className="relative">
+            <Avatar className={`h-20 w-20 ${isOwner ? "ring-2 ring-amber-500" : ""}`}>
+              <AvatarImage src={user.image || ""} alt={user.name} />
+              <AvatarFallback className="text-2xl">{initials}</AvatarFallback>
+            </Avatar>
+            {isOwner && (
+              <div className="absolute -bottom-1 -right-1 bg-white dark:bg-background rounded-full p-0.5">
+                <Star className="h-5 w-5 text-amber-500 fill-amber-500" />
+              </div>
+            )}
+          </div>
           <div className="space-y-1 flex-1">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-between">
               <div>
-                <CardTitle className="text-2xl">{user.name}</CardTitle>
+                <div className="flex items-center gap-1.5">
+                  <CardTitle className="text-2xl">{user.name}</CardTitle>
+                  {user.isVerified && <VerificationBadge />}
+                </div>
                 {user.email && (isOwnProfile || isAdmin) && <CardDescription>{user.email}</CardDescription>}
               </div>
               {isOwnProfile && (
@@ -192,9 +207,16 @@ export default function UserProfile({ userId }: UserProfileProps) {
                 </Button>
               )}
             </div>
-            <div className="flex items-center mt-2">
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              {isOwner && <FounderBadge />}
               <Badge variant="outline" className="mr-2">
-                {user.role === "admin" ? "Administrator" : user.role === "contributor" ? "Contributor" : "Member"}
+                {user.role === "owner"
+                  ? "Owner"
+                  : user.role === "admin"
+                    ? "Administrator"
+                    : user.role === "contributor"
+                      ? "Contributor"
+                      : "Member"}
               </Badge>
               <Badge variant="outline" className="bg-primary/10 text-primary">
                 {getTotalContributions()} Contributions
@@ -236,6 +258,19 @@ export default function UserProfile({ userId }: UserProfileProps) {
               </div>
             )}
           </div>
+
+          {isOwner && (
+            <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800">
+              <h3 className="text-sm font-medium flex items-center gap-1.5 text-amber-800 dark:text-amber-300">
+                <Crown className="h-4 w-4" />
+                Founder & Owner
+              </h3>
+              <p className="text-sm mt-1 text-amber-700 dark:text-amber-400">
+                This account belongs to the founder and owner of OpenBalti. They created this platform to preserve and
+                promote the Balti language.
+              </p>
+            </div>
+          )}
 
           <div className="pt-4 border-t">
             <h3 className="text-lg font-medium mb-4">Contribution Statistics</h3>

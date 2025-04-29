@@ -50,6 +50,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       location: user.location,
       website: user.website,
       isPublic: user.isPublic !== false, // Default to true if not specified
+      isVerified: user.isVerified || false,
+      isFounder: user.isFounder || user.role === "owner" || false,
       contributionStats,
       createdAt: user.createdAt || new Date().toISOString(),
       // Only include email if it's the user's own profile or an admin
@@ -99,6 +101,17 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       }
     })
 
+    // Only admins can update these fields
+    if (session.user.role === "admin" || session.user.role === "owner") {
+      if (body.isVerified !== undefined) updateData.isVerified = body.isVerified
+      if (body.role !== undefined) updateData.role = body.role
+
+      // Only owner can set founder status
+      if (session.user.role === "owner" && body.isFounder !== undefined) {
+        updateData.isFounder = body.isFounder
+      }
+    }
+
     // Update the user
     const user = await User.findByIdAndUpdate(params.id, updateData, { new: true, runValidators: true }).select(
       "-password",
@@ -119,6 +132,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         location: user.location,
         website: user.website,
         isPublic: user.isPublic,
+        isVerified: user.isVerified,
+        isFounder: user.isFounder,
+        role: user.role,
       },
     })
   } catch (error) {
