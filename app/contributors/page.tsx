@@ -2,6 +2,7 @@ import { Suspense } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { generateMetadata } from "@/lib/metadata"
 import ContributorsList from "@/components/profile/contributors-list"
+import ErrorBoundary from "@/components/error-boundary"
 
 export const metadata = generateMetadata(
   "Contributors",
@@ -18,20 +19,36 @@ export default function ContributorsPage() {
             Meet the people helping to preserve and document the Balti language
           </p>
         </div>
-        <Suspense
+        <ErrorBoundary
           fallback={
-            <div className="space-y-4">
-              <Skeleton className="h-10 w-full max-w-md" />
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {[...Array(6)].map((_, i) => (
-                  <Skeleton key={i} className="h-48 w-full" />
-                ))}
+            <div className="p-8 text-center">
+              <h2 className="text-2xl font-bold mb-4">Something went wrong</h2>
+              <p className="text-muted-foreground mb-6">
+                We're having trouble loading the contributors list. Please try again later.
+              </p>
+              <div className="flex justify-center">
+                <a href="/contributors" className="bg-primary text-white px-4 py-2 rounded-md">
+                  Try Again
+                </a>
               </div>
             </div>
           }
         >
-          <ContributorsList />
-        </Suspense>
+          <Suspense
+            fallback={
+              <div className="space-y-4">
+                <Skeleton className="h-10 w-full max-w-md" />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {[...Array(6)].map((_, i) => (
+                    <Skeleton key={i} className="h-48 w-full" />
+                  ))}
+                </div>
+              </div>
+            }
+          >
+            <ContributorsList />
+          </Suspense>
+        </ErrorBoundary>
       </div>
     </div>
   )

@@ -28,24 +28,35 @@ export async function GET(req: NextRequest) {
     // Determine sort order
     let sort: any = {}
     if (sortBy === "contributions") {
-      // Calculate total contributions for sorting
-      sort = {
-        "contributionStats.total": -1, // Sort by total contributions
-        "contributionStats.wordsAdded": -1,
-        "contributionStats.wordsEdited": -1,
-        "contributionStats.wordsReviewed": -1,
-      }
+      sort = { "contributionStats.total": -1 }
     } else if (sortBy === "recent") {
       sort = { createdAt: -1 }
     } else if (sortBy === "name") {
       sort = { name: 1 }
     }
 
-    // Add a calculated field for total contributions
+    // Make sure contributionStats exists for all users
     const pipeline = [
       { $match: query },
       {
         $addFields: {
+          contributionStats: {
+            $ifNull: [
+              "$contributionStats",
+              {
+                wordsAdded: 0,
+                wordsEdited: 0,
+                wordsReviewed: 0,
+              },
+            ],
+          },
+        },
+      },
+      {
+        $addFields: {
+          "contributionStats.wordsAdded": { $ifNull: ["$contributionStats.wordsAdded", 0] },
+          "contributionStats.wordsEdited": { $ifNull: ["$contributionStats.wordsEdited", 0] },
+          "contributionStats.wordsReviewed": { $ifNull: ["$contributionStats.wordsReviewed", 0] },
           "contributionStats.total": {
             $add: [
               { $ifNull: ["$contributionStats.wordsAdded", 0] },

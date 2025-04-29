@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, Search, ChevronLeft, ChevronRight, Lock } from "lucide-react"
+import { Loader2, Search, ChevronLeft, ChevronRight, Lock, AlertTriangle } from "lucide-react"
 import { toast } from "react-toastify"
 import Link from "next/link"
 import { format } from "date-fns"
@@ -33,6 +33,7 @@ export default function ContributorsList() {
   const router = useRouter()
   const [contributors, setContributors] = useState<Contributor[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [sortBy, setSortBy] = useState<string>("contributions")
   const [page, setPage] = useState(1)
@@ -42,19 +43,10 @@ export default function ContributorsList() {
     fetchContributors()
   }, [page, sortBy, searchTerm])
 
-  // Update getTotalContributions function to handle potential undefined values
-  const getTotalContributions = (contributor: Contributor) => {
-    if (contributor.contributionStats.total !== undefined) {
-      return contributor.contributionStats.total
-    }
-    const { wordsAdded = 0, wordsEdited = 0, wordsReviewed = 0 } = contributor.contributionStats
-    return wordsAdded + wordsEdited + wordsReviewed
-  }
-
-  // Add better error handling for the API request
   const fetchContributors = async () => {
     try {
       setLoading(true)
+      setError(null)
 
       // Build query parameters
       const params = new URLSearchParams()
@@ -69,32 +61,69 @@ export default function ContributorsList() {
       const response = await fetch(`/api/users?${params.toString()}`)
 
       if (!response.ok) {
-        if (response.status === 401) {
-          toast.error("Authentication required. Please sign in.")
-          router.push("/auth/signin?callbackUrl=/contributors")
-          return
-        }
-        throw new Error(`Failed to fetch contributors: ${response.status}`)
+        throw new Error(`Server responded with status: ${response.status}`)
       }
 
       const result = await response.json()
 
       if (result.success) {
-        setContributors(result.data)
+        // Ensure all contributors have the required properties
+        const sanitizedContributors = result.data.map((contributor: any) => ({
+          ...contributor,
+          name: contributor.name || "Unknown User",
+          role: contributor.role || "member",
+          isPublic: contributor.isPublic ?? true,
+          contributionStats: {
+            wordsAdded: contributor.contributionStats?.wordsAdded || 0,
+            wordsEdited: contributor.contributionStats?.wordsEdited || 0,
+            wordsReviewed: contributor.contributionStats?.wordsReviewed || 0,
+            total: contributor.contributionStats?.total || 0,
+          },
+          createdAt: contributor.createdAt || new Date().toISOString(),
+        }))
+
+        setContributors(sanitizedContributors)
         setTotalPages(result.pagination.pages)
       } else {
-        toast.error(result.error || "Failed to fetch contributors")
+        throw new Error(result.error || "Failed to fetch contributors")
       }
     } catch (error) {
       console.error("Error fetching contributors:", error)
+      setError(error instanceof Error ? error.message : "An unknown error occurred")
       toast.error("Failed to fetch contributors. Please try again later.")
     } finally {
       setLoading(false)
     }
   }
 
+  const getTotalContributions = (contributor: Contributor) => {
+    if (contributor.contributionStats?.total !== undefined) {
+      return contributor.contributionStats.total
+    }
+
+    const { wordsAdded = 0, wordsEdited = 0, wordsReviewed = 0 } = contributor.contributionStats || {}
+    return wordsAdded + wordsEdited + wordsReviewed
+  }
+
   const formatDate = (dateString: string) => {
-    return format(new Date(dateString), "MMM yyyy")
+    try {
+      return format(new Date(dateString), "MMM yyyy")
+    } catch (error) {
+      return "Unknown date"
+    }
+  }
+
+  if (error) {
+    return (
+      <Card className="p-6">
+        <div className="flex flex-col items-center justify-center text-center space-y-4">
+          <AlertTriangle className="h-12 w-12 text-amber-500" />
+          <h3 className="text-xl font-semibold">Error Loading Contributors</h3>
+          <p className="text-muted-foreground">{error}</p>
+          <Button onClick={() => fetchContributors()}>Try Again</Button>
+        </div>
+      </Card>
+    )
   }
 
   return (
@@ -151,7 +180,7 @@ export default function ContributorsList() {
               const initials = contributor.name
                 ? contributor.name
                     .split(" ")
-                    .map((n) => n[0])
+                    .map((n) => n?.[0] || "")
                     .join("")
                     .toUpperCase()
                 : "U"
