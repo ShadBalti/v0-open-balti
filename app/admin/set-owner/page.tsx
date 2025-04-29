@@ -4,6 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 
 export default function SetOwnerPage() {
   const [email, setEmail] = useState("")
@@ -52,6 +53,9 @@ export default function SetOwnerPage() {
   return (
     <div className="max-w-md mx-auto my-10 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
       <h1 className="text-2xl font-bold mb-6 text-center">Set Owner Account</h1>
+      <p className="mb-4 text-gray-600 dark:text-gray-300 text-sm">
+        This page allows you to designate your account as the owner and founder of OpenBalti.
+      </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -63,8 +67,9 @@ export default function SetOwnerPage() {
             id="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3 py-2 border rounded-md"
+            className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
             required
+            placeholder="Enter your account email"
           />
         </div>
 
@@ -77,16 +82,19 @@ export default function SetOwnerPage() {
             id="secretKey"
             value={secretKey}
             onChange={(e) => setSecretKey(e.target.value)}
-            className="w-full px-3 py-2 border rounded-md"
+            className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
             required
+            placeholder="Enter your secret key"
           />
-          <p className="text-xs text-gray-500 mt-1">Default key is: openbalti-owner-setup-2025 (change in .env)</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Use the OWNER_SECRET_KEY value from your environment variables
+          </p>
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md disabled:opacity-50"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md disabled:opacity-50 transition-colors"
         >
           {loading ? "Processing..." : "Set as Owner"}
         </button>
@@ -95,13 +103,24 @@ export default function SetOwnerPage() {
       {result && (
         <div
           className={`mt-4 p-3 rounded-md ${
-            result.success ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+            result.success
+              ? "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100"
+              : "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100"
           }`}
         >
           <p>{result.message}</p>
           {result.success && <p className="text-sm mt-2">Redirecting to your profile...</p>}
         </div>
       )}
+
+      <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <Link
+          href="/"
+          className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+        >
+          ← Return to home page
+        </Link>
+      </div>
     </div>
   )
 }

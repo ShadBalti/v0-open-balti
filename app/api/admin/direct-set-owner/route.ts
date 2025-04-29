@@ -18,10 +18,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: "Email and secret key are required" }, { status: 400 })
     }
 
-    // Check if secret key matches (use a strong, unique value in production)
-    // This is a simple security measure - in production, use a more secure approach
-    const expectedSecretKey = process.env.OWNER_SECRET_KEY || "openbalti-owner-setup-2025"
-    if (secretKey !== expectedSecretKey) {
+    // Check if secret key matches
+    const expectedSecretKey = process.env.OWNER_SECRET_KEY
+    if (!expectedSecretKey || secretKey !== expectedSecretKey) {
       return NextResponse.json({ success: false, message: "Invalid secret key" }, { status: 403 })
     }
 
