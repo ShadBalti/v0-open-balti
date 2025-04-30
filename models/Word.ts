@@ -3,6 +3,9 @@ import mongoose, { Schema, type Document } from "mongoose"
 export interface IWord extends Document {
   balti: string
   english: string
+  phonetic?: string
+  categories?: string[]
+  examples?: { balti: string; english: string }[]
   reviewStatus?: "flagged" | "reviewed" | null
   createdBy?: string
   updatedBy?: string
@@ -21,6 +24,23 @@ const WordSchema: Schema = new Schema(
       type: String,
       required: [true, "Please provide the English translation"],
       trim: true,
+    },
+    phonetic: {
+      type: String,
+      trim: true,
+    },
+    categories: {
+      type: [String],
+      default: [],
+    },
+    examples: {
+      type: [
+        {
+          balti: String,
+          english: String,
+        },
+      ],
+      default: [],
     },
     reviewStatus: {
       type: String,

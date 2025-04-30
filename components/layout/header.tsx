@@ -1,189 +1,111 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { MoonIcon, SunIcon, MenuIcon } from "lucide-react"
-import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { UserDropdown } from "@/components/auth/user-dropdown"
+import { useSession } from "next-auth/react"
+import { Bookmark, BookOpen, Info, Menu, Users, X } from "lucide-react"
+import { useState } from "react"
+import Image from "next/image"
+import { cn } from "@/lib/utils"
+import { SkipLink } from "@/components/layout/skip-link"
 
 export function Header() {
-  const { theme, setTheme } = useTheme()
-  const [isOpen, setIsOpen] = useState(false)
+  const { data: session } = useSession()
   const pathname = usePathname()
-  const [mounted, setMounted] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-  // Close mobile menu when route changes
-  useEffect(() => {
-    setIsOpen(false)
-  }, [pathname])
-
-  // After mounting, we can show the theme toggle
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  const isActive = (path: string) => {
-    return pathname === path
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen)
   }
 
+  const closeMobileMenu = () => {
+    setMobileMenuOpen(false)
+  }
+
+  const navItems = [
+    { href: "/", label: "Dictionary", icon: <BookOpen className="h-4 w-4 mr-2" /> },
+    { href: "/about", label: "About", icon: <Info className="h-4 w-4 mr-2" /> },
+    { href: "/contributors", label: "Contributors", icon: <Users className="h-4 w-4 mr-2" /> },
+    ...(session ? [{ href: "/favorites", label: "Favorites", icon: <Bookmark className="h-4 w-4 mr-2" /> }] : []),
+  ]
+
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between py-4">
-        <div className="flex items-center gap-2">
-          <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger asChild className="lg:hidden">
-              <Button variant="ghost" size="icon" className="mr-2 md:hidden" aria-label="Open menu">
-                <MenuIcon className="h-5 w-5" aria-hidden="true" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-[240px] sm:w-[300px]">
-              <SheetHeader>
-                <SheetTitle className="text-left">Navigation</SheetTitle>
-              </SheetHeader>
-              <nav className="flex flex-col gap-4 mt-4">
-                <Link
-                  href="/"
-                  className={`transition-colors px-2 py-1 rounded-md hover:bg-muted ${
-                    isActive("/") ? "text-primary font-medium" : "text-foreground"
-                  }`}
-                  aria-current={isActive("/") ? "page" : undefined}
-                >
-                  Dictionary
-                </Link>
-                <Link
-                  href="/about"
-                  className={`transition-colors px-2 py-1 rounded-md hover:bg-muted ${
-                    isActive("/about") ? "text-primary font-medium" : "text-foreground"
-                  }`}
-                  aria-current={isActive("/about") ? "page" : undefined}
-                >
-                  About Balti
-                </Link>
-                <Link
-                  href="/contribute"
-                  className={`transition-colors px-2 py-1 rounded-md hover:bg-muted ${
-                    isActive("/contribute") ? "text-primary font-medium" : "text-foreground"
-                  }`}
-                  aria-current={isActive("/contribute") ? "page" : undefined}
-                >
-                  Contribute
-                </Link>
-                <Link
-                  href="/contributors"
-                  className={`transition-colors px-2 py-1 rounded-md hover:bg-muted ${
-                    isActive("/contributors") ? "text-primary font-medium" : "text-foreground"
-                  }`}
-                  aria-current={isActive("/contributors") ? "page" : undefined}
-                >
-                  Contributors
-                </Link>
-                <Link
-                  href="/review"
-                  className={`transition-colors px-2 py-1 rounded-md hover:bg-muted ${
-                    isActive("/review") ? "text-primary font-medium" : "text-foreground"
-                  }`}
-                  aria-current={isActive("/review") ? "page" : undefined}
-                >
-                  Review
-                </Link>
-                <Link
-                  href="/activity"
-                  className={`transition-colors px-2 py-1 rounded-md hover:bg-muted ${
-                    isActive("/activity") ? "text-primary font-medium" : "text-foreground"
-                  }`}
-                  aria-current={isActive("/activity") ? "page" : undefined}
-                >
-                  Activity Log
-                </Link>
-              </nav>
-            </SheetContent>
-          </Sheet>
-          <Link href="/" className="flex items-center space-x-2" aria-label="OpenBalti Dictionary Home">
-            <span className="font-bold text-xl md:text-2xl bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-              OpenBalti
-            </span>
+    <header className="sticky top-0 z-40 w-full border-b bg-background">
+      <SkipLink />
+      <div className="container flex h-16 items-center">
+        <div className="flex items-center space-x-4">
+          <Link href="/" className="flex items-center space-x-2">
+            <Image src="/logo.png" alt="OpenBalti Logo" width={32} height={32} />
+            <span className="font-bold hidden md:inline-block">OpenBalti</span>
           </Link>
         </div>
-        <nav className="hidden md:flex items-center gap-6 text-sm" aria-label="Main navigation">
-          <Link
-            href="/"
-            className={`transition-colors ${
-              isActive("/") ? "text-primary font-medium" : "text-muted-foreground hover:text-primary"
-            }`}
-            aria-current={isActive("/") ? "page" : undefined}
-          >
-            Dictionary
-          </Link>
-          <Link
-            href="/about"
-            className={`transition-colors ${
-              isActive("/about") ? "text-primary font-medium" : "text-muted-foreground hover:text-primary"
-            }`}
-            aria-current={isActive("/about") ? "page" : undefined}
-          >
-            About Balti
-          </Link>
-          <Link
-            href="/contribute"
-            className={`transition-colors ${
-              isActive("/contribute") ? "text-primary font-medium" : "text-muted-foreground hover:text-primary"
-            }`}
-            aria-current={isActive("/contribute") ? "page" : undefined}
-          >
-            Contribute
-          </Link>
-          <Link
-            href="/contributors"
-            className={`transition-colors ${
-              isActive("/contributors") ? "text-primary font-medium" : "text-muted-foreground hover:text-primary"
-            }`}
-            aria-current={isActive("/contributors") ? "page" : undefined}
-          >
-            Contributors
-          </Link>
-          <Link
-            href="/review"
-            className={`transition-colors ${
-              isActive("/review") ? "text-primary font-medium" : "text-muted-foreground hover:text-primary"
-            }`}
-            aria-current={isActive("/review") ? "page" : undefined}
-          >
-            Review
-          </Link>
-          <Link
-            href="/activity"
-            className={`transition-colors ${
-              isActive("/activity") ? "text-primary font-medium" : "text-muted-foreground hover:text-primary"
-            }`}
-            aria-current={isActive("/activity") ? "page" : undefined}
-          >
-            Activity Log
-          </Link>
-        </nav>
-        <div className="flex items-center gap-2">
-          {mounted && (
+
+        {/* Desktop Navigation */}
+        <nav className="mx-6 hidden md:flex md:items-center md:space-x-4 lg:space-x-6">
+          {navItems.map((item) => (
             <Button
+              key={item.href}
+              asChild
               variant="ghost"
-              size="icon"
-              aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className={cn(
+                "text-sm font-medium transition-colors",
+                pathname === item.href ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+              )}
             >
-              <SunIcon
-                className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
-                aria-hidden="true"
-              />
-              <MoonIcon
-                className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
-                aria-hidden="true"
-              />
+              <Link href={item.href}>
+                <div className="flex items-center">
+                  {item.icon}
+                  {item.label}
+                </div>
+              </Link>
             </Button>
-          )}
+          ))}
+        </nav>
+
+        <div className="flex flex-1 items-center justify-end space-x-4">
           <UserDropdown />
+          <Button
+            variant="outline"
+            size="icon"
+            className="md:hidden"
+            onClick={toggleMobileMenu}
+            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+          >
+            {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          </Button>
         </div>
       </div>
+
+      {/* Mobile Navigation */}
+      {mobileMenuOpen && (
+        <div className="md:hidden">
+          <nav className="container grid gap-y-2 py-4">
+            {navItems.map((item) => (
+              <Button
+                key={item.href}
+                asChild
+                variant="ghost"
+                className={cn(
+                  "justify-start text-sm font-medium transition-colors",
+                  pathname === item.href ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+                )}
+                onClick={closeMobileMenu}
+              >
+                <Link href={item.href}>
+                  <div className="flex items-center">
+                    {item.icon}
+                    {item.label}
+                  </div>
+                </Link>
+              </Button>
+            ))}
+          </nav>
+        </div>
+      )}
     </header>
   )
 }
+
+export default Header

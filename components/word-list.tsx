@@ -3,11 +3,12 @@
 import { useState } from "react"
 import type { IWord } from "@/models/Word"
 import { Button } from "@/components/ui/button"
-import { Edit, Trash2, ChevronDown, ChevronUp, History } from "lucide-react"
+import { Edit, Trash2, ChevronDown, ChevronUp, History, Eye } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
+import WordDetail from "@/components/word-detail"
 
 interface WordListProps {
   words: IWord[]
@@ -20,6 +21,7 @@ interface WordListProps {
 export default function WordList({ words, direction, onEdit, onDelete, showActions = true }: WordListProps) {
   const [sortField, setSortField] = useState<"balti" | "english">("balti")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
+  const [selectedWord, setSelectedWord] = useState<IWord | null>(null)
 
   const handleSort = (field: "balti" | "english") => {
     if (sortField === field) {
@@ -64,6 +66,17 @@ export default function WordList({ words, direction, onEdit, onDelete, showActio
     )
   }
 
+  if (selectedWord) {
+    return (
+      <div className="space-y-4">
+        <Button variant="outline" onClick={() => setSelectedWord(null)} className="mb-2">
+          Back to word list
+        </Button>
+        <WordDetail word={selectedWord} />
+      </div>
+    )
+  }
+
   const isBaltiToEnglish = direction === "balti-to-english"
   const firstColumnHeader = isBaltiToEnglish ? "Balti" : "English"
   const secondColumnHeader = isBaltiToEnglish ? "English" : "Balti"
@@ -88,7 +101,7 @@ export default function WordList({ words, direction, onEdit, onDelete, showActio
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[40%]" onClick={() => handleSort(firstColumnField as "balti" | "english")}>
+                <TableHead className="w-[35%]" onClick={() => handleSort(firstColumnField as "balti" | "english")}>
                   <div className="flex items-center cursor-pointer hover:text-primary transition-colors">
                     {firstColumnHeader}
                     {sortField === firstColumnField &&
@@ -99,7 +112,7 @@ export default function WordList({ words, direction, onEdit, onDelete, showActio
                       ))}
                   </div>
                 </TableHead>
-                <TableHead className="w-[40%]" onClick={() => handleSort(secondColumnField as "balti" | "english")}>
+                <TableHead className="w-[35%]" onClick={() => handleSort(secondColumnField as "balti" | "english")}>
                   <div className="flex items-center cursor-pointer hover:text-primary transition-colors">
                     {secondColumnHeader}
                     {sortField === secondColumnField &&
@@ -110,16 +123,51 @@ export default function WordList({ words, direction, onEdit, onDelete, showActio
                       ))}
                   </div>
                 </TableHead>
-                <TableHead className="w-[20%] text-right">Actions</TableHead>
+                <TableHead className="w-[15%]">Categories</TableHead>
+                <TableHead className="w-[15%] text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {sortedWords.map((word) => (
                 <TableRow key={word._id} className="group">
-                  <TableCell className="font-medium">{isBaltiToEnglish ? word.balti : word.english}</TableCell>
+                  <TableCell className="font-medium">
+                    <div>
+                      {isBaltiToEnglish ? word.balti : word.english}
+                      {word.phonetic && isBaltiToEnglish && (
+                        <div className="text-xs text-muted-foreground">/{word.phonetic}/</div>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>{isBaltiToEnglish ? word.english : word.balti}</TableCell>
+                  <TableCell>
+                    {word.categories && word.categories.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {word.categories.slice(0, 2).map((category, index) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {category}
+                          </Badge>
+                        ))}
+                        {word.categories.length > 2 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{word.categories.length - 2}
+                          </Badge>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">None</span>
+                    )}
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setSelectedWord(word)}
+                        aria-label="View word details"
+                        className="h-8 w-8 text-muted-foreground hover:text-primary"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"

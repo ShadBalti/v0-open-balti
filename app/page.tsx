@@ -2,7 +2,7 @@ import WordsPage from "@/components/words-page"
 import { Suspense } from "react"
 import { DictionaryStructuredData } from "@/components/structured-data"
 import { WordsPageSkeleton } from "@/components/skeletons/words-page-skeleton"
-
+import { HomePageContent } from "@/components/HomePageContent"
 export default function Home() {
   return (
     <div className="container py-8 md:py-12">
@@ -16,6 +16,7 @@ export default function Home() {
         <Suspense fallback={<WordsPageSkeleton />}>
           <WordsPage />
         </Suspense>
+        <HomePageContent />
       </div>
       <DictionaryStructuredData url="/" />
     </div>
