@@ -27,6 +27,7 @@ import Link from "next/link"
 // Add these imports after the existing imports
 import DialectBrowser from "@/components/dialect-browser"
 import DifficultyBrowser from "@/components/difficulty-browser"
+import FeedbackFilter from "@/components/feedback-filter"
 
 export default function WordsPage() {
   const { data: session } = useSession()
@@ -40,15 +41,25 @@ export default function WordsPage() {
     wordId: null,
   })
   const [activeTab, setActiveTab] = useState<"browse" | "add">("browse")
+  const [feedbackFilter, setFeedbackFilter] = useState<string>("all")
 
   useEffect(() => {
     fetchWords()
-  }, [searchTerm])
+  }, [searchTerm, feedbackFilter])
 
   const fetchWords = async () => {
     try {
       setLoading(true)
-      const url = searchTerm ? `/api/words?search=${encodeURIComponent(searchTerm)}` : "/api/words"
+      let url = "/api/words"
+
+      // Build query parameters
+      const params = new URLSearchParams()
+      if (searchTerm) params.append("search", searchTerm)
+      if (feedbackFilter !== "all") params.append("feedback", feedbackFilter)
+
+      if (params.toString()) {
+        url += `?${params.toString()}`
+      }
 
       const response = await fetch(url)
       const result = await response.json()
@@ -150,9 +161,10 @@ export default function WordsPage() {
 
   return (
     <div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <DialectBrowser />
         <DifficultyBrowser />
+        <FeedbackFilter onFilterChange={setFeedbackFilter} />
       </div>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between gap-4">

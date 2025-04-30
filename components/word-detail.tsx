@@ -9,6 +9,8 @@ import Link from "next/link"
 import { useSession } from "next-auth/react"
 import { toast } from "react-toastify"
 import type { IWord } from "@/models/Word"
+import WordFeedback from "@/components/word-feedback"
+import WordComments from "@/components/word-comments"
 
 interface WordDetailProps {
   word: IWord
@@ -169,6 +171,16 @@ export default function WordDetail({ word, onClose }: WordDetailProps) {
                 </Badge>
               ))}
             </div>
+          </div>
+        )}
+        {word._id && (
+          <div className="mt-6">
+            <WordFeedback wordId={word._id} />
+          </div>
+        )}
+        {word._id && (
+          <div className="mt-4">
+            <WordComments wordId={word._id} />
           </div>
         )}
       </CardContent>

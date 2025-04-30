@@ -1,4 +1,5 @@
 import Link from "next/link"
+import CommunityStats from "@/components/community-stats"
 
 export function HomePageContent() {
   return (
@@ -64,6 +65,10 @@ export function HomePageContent() {
         , fixing definitions, or sharing this platform. Every contribution adds value to this growing dictionary for the
         Balti-speaking community and beyond.
       </p>
+
+      <div className="mt-8">
+        <CommunityStats />
+      </div>
 
       <h2 className="text-xl font-semibold">Stay Connected</h2>
       <p>

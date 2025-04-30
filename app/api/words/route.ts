@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
     const category = searchParams.get("category") || ""
     const dialect = searchParams.get("dialect") || ""
     const difficulty = searchParams.get("difficulty") || ""
+    const feedbackFilter = searchParams.get("feedback")
 
     let query: any = {}
 
@@ -42,7 +43,29 @@ export async function GET(req: NextRequest) {
       query.difficultyLevel = difficulty
     }
 
-    const words = await Word.find(query).sort({ createdAt: -1 })
+    let sortOptions = {}
+    if (feedbackFilter) {
+      switch (feedbackFilter) {
+        case "useful":
+          sortOptions = { "feedbackStats.usefulCount": -1 }
+          break
+        case "trusted":
+          sortOptions = { "feedbackStats.trustedCount": -1 }
+          break
+        case "needsReview":
+          sortOptions = { "feedbackStats.needsReviewCount": -1 }
+          break
+        case "mostFeedback":
+          sortOptions = { "feedbackStats.totalFeedback": -1 }
+          break
+        default:
+          sortOptions = { createdAt: -1 }
+      }
+    } else {
+      sortOptions = { createdAt: -1 }
+    }
+
+    const words = await Word.find(query).sort(sortOptions)
     console.log(`📋 API: Successfully fetched ${words.length} words`)
 
     return NextResponse.json({ success: true, data: words })

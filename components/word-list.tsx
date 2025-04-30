@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import WordDetail from "@/components/word-detail"
+import FeedbackBadges from "@/components/feedback-badges"
 
 interface WordListProps {
   words: IWord[]
@@ -124,6 +125,7 @@ export default function WordList({ words, direction, onEdit, onDelete, showActio
                   </div>
                 </TableHead>
                 <TableHead className="w-[15%]">Categories</TableHead>
+                <TableHead className="w-[15%]">Feedback</TableHead>
                 <TableHead className="w-[15%] text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -156,6 +158,9 @@ export default function WordList({ words, direction, onEdit, onDelete, showActio
                     ) : (
                       <span className="text-muted-foreground text-xs">None</span>
                     )}
+                  </TableCell>
+                  <TableCell>
+                    <FeedbackBadges feedbackStats={word.feedbackStats} size="sm" />
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">

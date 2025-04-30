@@ -14,6 +14,12 @@ export interface IWord extends Document {
   updatedBy?: string
   createdAt: Date
   updatedAt: Date
+  feedbackStats?: {
+    usefulCount: number
+    trustedCount: number
+    needsReviewCount: number
+    totalFeedback: number
+  }
 }
 
 const WordSchema: Schema = new Schema(
@@ -65,6 +71,20 @@ const WordSchema: Schema = new Schema(
     updatedBy: {
       type: Schema.Types.ObjectId,
       ref: "User",
+    },
+    feedbackStats: {
+      type: {
+        usefulCount: { type: Number, default: 0 },
+        trustedCount: { type: Number, default: 0 },
+        needsReviewCount: { type: Number, default: 0 },
+        totalFeedback: { type: Number, default: 0 },
+      },
+      default: {
+        usefulCount: 0,
+        trustedCount: 0,
+        needsReviewCount: 0,
+        totalFeedback: 0,
+      },
     },
   },
   {
