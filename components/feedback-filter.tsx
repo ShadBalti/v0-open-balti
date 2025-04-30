@@ -1,60 +1,54 @@
 "use client"
-
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ThumbsUp, Shield, Flag, Users } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { ThumbsUp, Shield, AlertTriangle, X } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 
 interface FeedbackFilterProps {
-  onFilterChange: (filter: string) => void
+  onFilterChange: (filter: string | null) => void
+  activeFilter: string | null
 }
 
-export default function FeedbackFilter({ onFilterChange }: FeedbackFilterProps) {
-  const [filter, setFilter] = useState("all")
+export default function FeedbackFilter({ onFilterChange, activeFilter }: FeedbackFilterProps) {
+  const filters = [
+    { id: "useful", label: "Most Useful", icon: <ThumbsUp className="h-4 w-4 mr-2" /> },
+    { id: "trusted", label: "Most Trusted", icon: <Shield className="h-4 w-4 mr-2" /> },
+    { id: "needsReview", label: "Needs Review", icon: <AlertTriangle className="h-4 w-4 mr-2" /> },
+  ]
 
-  const handleFilterChange = (value: string) => {
-    setFilter(value)
-    onFilterChange(value)
+  const handleFilterClick = (filterId: string) => {
+    if (activeFilter === filterId) {
+      onFilterChange(null)
+    } else {
+      onFilterChange(filterId)
+    }
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Users className="h-5 w-5" />
-          Community Feedback
-        </CardTitle>
-        <CardDescription>Filter words by community feedback</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Select value={filter} onValueChange={handleFilterChange}>
-          <SelectTrigger>
-            <SelectValue placeholder="Filter by feedback" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Words</SelectItem>
-            <SelectItem value="useful">
-              <div className="flex items-center">
-                <ThumbsUp className="h-4 w-4 text-green-500 mr-2" />
-                Most Useful
-              </div>
-            </SelectItem>
-            <SelectItem value="trusted">
-              <div className="flex items-center">
-                <Shield className="h-4 w-4 text-blue-500 mr-2" />
-                Most Trusted
-              </div>
-            </SelectItem>
-            <SelectItem value="needsReview">
-              <div className="flex items-center">
-                <Flag className="h-4 w-4 text-amber-500 mr-2" />
-                Needs Review
-              </div>
-            </SelectItem>
-            <SelectItem value="mostFeedback">Most Feedback</SelectItem>
-          </SelectContent>
-        </Select>
-      </CardContent>
-    </Card>
+    <div className="flex flex-wrap gap-2 mb-4">
+      <div className="flex items-center mr-2">
+        <span className="text-sm font-medium mr-2">Filter by feedback:</span>
+      </div>
+      {filters.map((filter) => (
+        <Button
+          key={filter.id}
+          variant={activeFilter === filter.id ? "default" : "outline"}
+          size="sm"
+          onClick={() => handleFilterClick(filter.id)}
+          className="flex items-center"
+        >
+          {filter.icon}
+          {filter.label}
+        </Button>
+      ))}
+      {activeFilter && (
+        <Badge variant="outline" className="flex items-center gap-1">
+          Active filter
+          <Button variant="ghost" size="icon" onClick={() => onFilterChange(null)} className="h-4 w-4 p-0 ml-1">
+            <X className="h-3 w-3" />
+            <span className="sr-only">Clear filter</span>
+          </Button>
+        </Badge>
+      )}
+    </div>
   )
 }

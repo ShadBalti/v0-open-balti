@@ -2,46 +2,31 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { Textarea } from "@/components/ui/textarea"
 import { useSession } from "next-auth/react"
-import { toast } from "react-toastify"
-import { ThumbsUp, Shield, Flag, MessageSquare, Loader2 } from "lucide-react"
-import Link from "next/link"
+import { useToast } from "@/hooks/use-toast"
+import { ThumbsUp, Shield, AlertTriangle, Loader2 } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 interface WordFeedbackProps {
   wordId: string
 }
 
 interface FeedbackStats {
-  usefulCount: number
-  trustedCount: number
-  needsReviewCount: number
-  totalFeedback: number
+  useful: number
+  trusted: number
+  needsReview: number
 }
 
-interface UserFeedback {
-  _id: string
-  isUseful: boolean
-  isTrusted: boolean
-  needsReview: boolean
-  comment?: string
-}
+type FeedbackType = "useful" | "trusted" | "needsReview"
 
 export default function WordFeedback({ wordId }: WordFeedbackProps) {
-  const { data: session, status } = useSession()
-  const [stats, setStats] = useState<FeedbackStats>({
-    usefulCount: 0,
-    trustedCount: 0,
-    needsReviewCount: 0,
-    totalFeedback: 0,
-  })
-  const [userFeedback, setUserFeedback] = useState<UserFeedback | null>(null)
-  const [comment, setComment] = useState("")
-  const [showCommentBox, setShowCommentBox] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
+  const { data: session } = useSession()
+  const { toast } = useToast()
+  const [stats, setStats] = useState<FeedbackStats>({ useful: 0, trusted: 0, needsReview: 0 })
+  const [userFeedback, setUserFeedback] = useState<FeedbackType | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     fetchFeedback()
@@ -49,253 +34,242 @@ export default function WordFeedback({ wordId }: WordFeedbackProps) {
 
   const fetchFeedback = async () => {
     try {
-      setLoading(true)
+      setIsLoading(true)
       const response = await fetch(`/api/words/${wordId}/feedback`)
       const result = await response.json()
 
       if (result.success) {
         setStats(result.data.stats)
         setUserFeedback(result.data.userFeedback)
-        if (result.data.userFeedback?.comment) {
-          setComment(result.data.userFeedback.comment)
-        }
       }
     } catch (error) {
       console.error("Error fetching feedback:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load feedback data",
+        variant: "destructive",
+      })
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 
-  const submitFeedback = async (type: "isUseful" | "isTrusted" | "needsReview", value: boolean) => {
-    if (status !== "authenticated") {
-      toast.error("Please sign in to provide feedback")
+  const handleFeedback = async (type: FeedbackType) => {
+    if (!session) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to provide feedback",
+        variant: "destructive",
+      })
       return
     }
 
     try {
-      setSubmitting(true)
-
-      // Prepare the feedback data
-      const feedbackData: Record<string, boolean | string | undefined> = {
-        [type]: value,
-      }
-
-      // Include comment if it exists
-      if (comment.trim()) {
-        feedbackData.comment = comment
-      }
-
+      setIsSubmitting(true)
       const response = await fetch(`/api/words/${wordId}/feedback`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(feedbackData),
+        body: JSON.stringify({ type }),
       })
 
       const result = await response.json()
 
       if (result.success) {
-        setStats(result.data.stats)
-        setUserFeedback(result.data.feedback)
-        toast.success("Feedback submitted successfully")
+        // Update local state based on the action
+        if (result.action === "added") {
+          setStats((prev) => ({
+            ...prev,
+            [type]: prev[type] + 1,
+          }))
+          setUserFeedback(type)
+          toast({
+            title: "Feedback submitted",
+            description: `You marked this word as ${getFeedbackLabel(type).toLowerCase()}`,
+          })
+        } else if (result.action === "removed") {
+          setStats((prev) => ({
+            ...prev,
+            [type]: prev[type] - 1,
+          }))
+          setUserFeedback(null)
+          toast({
+            title: "Feedback removed",
+            description: `You removed your feedback for this word`,
+          })
+        } else if (result.action === "changed") {
+          const oldType = userFeedback as FeedbackType
+          setStats((prev) => ({
+            ...prev,
+            [oldType]: prev[oldType] - 1,
+            [type]: prev[type] + 1,
+          }))
+          setUserFeedback(type)
+          toast({
+            title: "Feedback updated",
+            description: `You changed your feedback to ${getFeedbackLabel(type).toLowerCase()}`,
+          })
+        }
       } else {
-        toast.error(result.error || "Failed to submit feedback")
+        toast({
+          title: "Error",
+          description: result.error || "Failed to submit feedback",
+          variant: "destructive",
+        })
       }
     } catch (error) {
       console.error("Error submitting feedback:", error)
-      toast.error("An error occurred while submitting feedback")
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  const submitComment = async () => {
-    if (!userFeedback) {
-      toast.error("Please provide feedback before adding a comment")
-      return
-    }
-
-    try {
-      setSubmitting(true)
-      const response = await fetch(`/api/words/${wordId}/feedback`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          isUseful: userFeedback.isUseful,
-          isTrusted: userFeedback.isTrusted,
-          needsReview: userFeedback.needsReview,
-          comment,
-        }),
+      toast({
+        title: "Error",
+        description: "Failed to submit feedback",
+        variant: "destructive",
       })
-
-      const result = await response.json()
-
-      if (result.success) {
-        setUserFeedback(result.data.feedback)
-        toast.success("Comment submitted successfully")
-        setShowCommentBox(false)
-      } else {
-        toast.error(result.error || "Failed to submit comment")
-      }
-    } catch (error) {
-      console.error("Error submitting comment:", error)
-      toast.error("An error occurred while submitting comment")
     } finally {
-      setSubmitting(false)
+      setIsSubmitting(false)
     }
   }
 
-  const toggleFeedback = (type: "isUseful" | "isTrusted" | "needsReview") => {
-    if (!userFeedback) {
-      submitFeedback(type, true)
-    } else {
-      submitFeedback(type, !userFeedback[type])
+  const getFeedbackLabel = (type: FeedbackType): string => {
+    switch (type) {
+      case "useful":
+        return "Useful"
+      case "trusted":
+        return "Trusted"
+      case "needsReview":
+        return "Needs Review"
+      default:
+        return ""
     }
   }
 
-  if (loading) {
+  const getFeedbackIcon = (type: FeedbackType) => {
+    switch (type) {
+      case "useful":
+        return <ThumbsUp className="h-4 w-4" />
+      case "trusted":
+        return <Shield className="h-4 w-4" />
+      case "needsReview":
+        return <AlertTriangle className="h-4 w-4" />
+    }
+  }
+
+  const totalFeedback = stats.useful + stats.trusted + stats.needsReview
+
+  const getProgressValue = (count: number): number => {
+    if (totalFeedback === 0) return 0
+    return (count / totalFeedback) * 100
+  }
+
+  if (isLoading) {
     return (
-      <div className="flex justify-center items-center py-4">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      <div className="flex justify-center py-4">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     )
   }
 
   return (
     <Card>
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-2">
         <CardTitle className="text-lg">Community Feedback</CardTitle>
-        <CardDescription>Help improve the dictionary by providing feedback on this word</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {stats.totalFeedback > 0 ? (
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <ThumbsUp className="h-4 w-4 text-green-500" />
-                <span>Useful</span>
-              </div>
-              <span className="text-sm font-medium">
-                {stats.usefulCount} / {stats.totalFeedback}
+      <CardContent>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <Button
+              variant={userFeedback === "useful" ? "default" : "outline"}
+              className="flex items-center gap-2"
+              onClick={() => handleFeedback("useful")}
+              disabled={isSubmitting}
+            >
+              {isSubmitting && userFeedback === "useful" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <ThumbsUp className="h-4 w-4" />
+              )}
+              Useful
+              <span className="ml-auto bg-primary-foreground text-primary rounded-full px-2 py-0.5 text-xs">
+                {stats.useful}
               </span>
-            </div>
-            <Progress value={(stats.usefulCount / stats.totalFeedback) * 100} className="h-2" />
+            </Button>
 
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <Shield className="h-4 w-4 text-blue-500" />
-                <span>Trusted</span>
-              </div>
-              <span className="text-sm font-medium">
-                {stats.trustedCount} / {stats.totalFeedback}
+            <Button
+              variant={userFeedback === "trusted" ? "default" : "outline"}
+              className="flex items-center gap-2"
+              onClick={() => handleFeedback("trusted")}
+              disabled={isSubmitting}
+            >
+              {isSubmitting && userFeedback === "trusted" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Shield className="h-4 w-4" />
+              )}
+              Trusted
+              <span className="ml-auto bg-primary-foreground text-primary rounded-full px-2 py-0.5 text-xs">
+                {stats.trusted}
               </span>
-            </div>
-            <Progress value={(stats.trustedCount / stats.totalFeedback) * 100} className="h-2" />
+            </Button>
 
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <Flag className="h-4 w-4 text-amber-500" />
-                <span>Needs Review</span>
-              </div>
-              <span className="text-sm font-medium">
-                {stats.needsReviewCount} / {stats.totalFeedback}
+            <Button
+              variant={userFeedback === "needsReview" ? "default" : "outline"}
+              className="flex items-center gap-2"
+              onClick={() => handleFeedback("needsReview")}
+              disabled={isSubmitting}
+            >
+              {isSubmitting && userFeedback === "needsReview" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <AlertTriangle className="h-4 w-4" />
+              )}
+              Needs Review
+              <span className="ml-auto bg-primary-foreground text-primary rounded-full px-2 py-0.5 text-xs">
+                {stats.needsReview}
               </span>
-            </div>
-            <Progress value={(stats.needsReviewCount / stats.totalFeedback) * 100} className="h-2" />
-
-            <div className="text-sm text-muted-foreground text-center mt-2">
-              Based on feedback from {stats.totalFeedback} {stats.totalFeedback === 1 ? "user" : "users"}
-            </div>
-          </div>
-        ) : (
-          <div className="text-center py-2 text-muted-foreground">
-            No feedback yet. Be the first to provide feedback!
-          </div>
-        )}
-
-        {status === "authenticated" ? (
-          <div className="pt-4 border-t">
-            <div className="flex flex-wrap gap-2 justify-center">
-              <Button
-                variant={userFeedback?.isUseful ? "default" : "outline"}
-                size="sm"
-                onClick={() => toggleFeedback("isUseful")}
-                disabled={submitting}
-                className={userFeedback?.isUseful ? "bg-green-600 hover:bg-green-700" : ""}
-              >
-                <ThumbsUp className="h-4 w-4 mr-1" />
-                Useful
-              </Button>
-              <Button
-                variant={userFeedback?.isTrusted ? "default" : "outline"}
-                size="sm"
-                onClick={() => toggleFeedback("isTrusted")}
-                disabled={submitting}
-                className={userFeedback?.isTrusted ? "bg-blue-600 hover:bg-blue-700" : ""}
-              >
-                <Shield className="h-4 w-4 mr-1" />
-                Trusted
-              </Button>
-              <Button
-                variant={userFeedback?.needsReview ? "default" : "outline"}
-                size="sm"
-                onClick={() => toggleFeedback("needsReview")}
-                disabled={submitting}
-                className={userFeedback?.needsReview ? "bg-amber-600 hover:bg-amber-700" : ""}
-              >
-                <Flag className="h-4 w-4 mr-1" />
-                Needs Review
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowCommentBox(!showCommentBox)}
-                disabled={submitting || !userFeedback}
-              >
-                <MessageSquare className="h-4 w-4 mr-1" />
-                {userFeedback?.comment ? "Edit Comment" : "Add Comment"}
-              </Button>
-            </div>
-
-            {showCommentBox && (
-              <div className="mt-4 space-y-2">
-                <Textarea
-                  placeholder="Add your comment about this word..."
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  rows={3}
-                  disabled={submitting}
-                />
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setShowCommentBox(false)} disabled={submitting}>
-                    Cancel
-                  </Button>
-                  <Button size="sm" onClick={submitComment} disabled={submitting || !comment.trim()}>
-                    {submitting ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                        Submitting...
-                      </>
-                    ) : (
-                      "Submit Comment"
-                    )}
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="text-center pt-4 border-t">
-            <p className="text-sm text-muted-foreground mb-2">Sign in to provide feedback</p>
-            <Button asChild size="sm">
-              <Link href="/auth/signin?callbackUrl=/words">Sign In</Link>
             </Button>
           </div>
-        )}
+
+          {totalFeedback > 0 && (
+            <div className="space-y-2">
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center">
+                    <ThumbsUp className="h-3 w-3 mr-1 text-green-500" />
+                    <span>Useful</span>
+                  </div>
+                  <span>{Math.round(getProgressValue(stats.useful))}%</span>
+                </div>
+                <Progress value={getProgressValue(stats.useful)} className="h-1.5" />
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center">
+                    <Shield className="h-3 w-3 mr-1 text-blue-500" />
+                    <span>Trusted</span>
+                  </div>
+                  <span>{Math.round(getProgressValue(stats.trusted))}%</span>
+                </div>
+                <Progress value={getProgressValue(stats.trusted)} className="h-1.5" />
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center">
+                    <AlertTriangle className="h-3 w-3 mr-1 text-amber-500" />
+                    <span>Needs Review</span>
+                  </div>
+                  <span>{Math.round(getProgressValue(stats.needsReview))}%</span>
+                </div>
+                <Progress value={getProgressValue(stats.needsReview)} className="h-1.5" />
+              </div>
+            </div>
+          )}
+
+          {!session && (
+            <p className="text-xs text-muted-foreground text-center mt-2">Sign in to provide feedback on this word</p>
+          )}
+        </div>
       </CardContent>
     </Card>
   )
