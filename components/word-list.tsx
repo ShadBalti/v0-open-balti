@@ -3,7 +3,7 @@
 import { useState } from "react"
 import type { IWord } from "@/models/Word"
 import { Button } from "@/components/ui/button"
-import { Edit, Trash2, ChevronDown, ChevronUp, History, Eye } from "lucide-react"
+import { Edit, Trash2, ChevronDown, ChevronUp, History, Eye, GraduationCap } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -159,6 +159,12 @@ export default function WordList({ words, direction, onEdit, onDelete, showActio
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
+                      {word.difficultyLevel && (
+                        <span className="flex items-center mr-2">
+                          <GraduationCap className="h-4 w-4 text-muted-foreground mr-1" />
+                          <span className="text-xs text-muted-foreground capitalize">{word.difficultyLevel}</span>
+                        </span>
+                      )}
                       <Button
                         variant="ghost"
                         size="icon"

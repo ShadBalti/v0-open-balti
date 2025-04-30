@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Bookmark, BookmarkCheck, History } from "lucide-react"
+import { Bookmark, BookmarkCheck, History, Lightbulb, GraduationCap } from "lucide-react"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
 import { toast } from "react-toastify"
@@ -120,6 +120,15 @@ export default function WordDetail({ word, onClose }: WordDetailProps) {
           <p className="text-lg">{word.english}</p>
         </div>
 
+        {word.difficultyLevel && (
+          <div className="flex items-center gap-2">
+            <GraduationCap className="h-4 w-4 text-muted-foreground" />
+            <Badge variant="outline">
+              {word.difficultyLevel.charAt(0).toUpperCase() + word.difficultyLevel.slice(1)} Level
+            </Badge>
+          </div>
+        )}
+
         {word.categories && word.categories.length > 0 && (
           <div>
             <h3 className="font-medium mb-2">Categories</h3>
@@ -133,15 +142,31 @@ export default function WordDetail({ word, onClose }: WordDetailProps) {
           </div>
         )}
 
-        {word.examples && word.examples.length > 0 && (
+        {word.dialect && (
           <div>
-            <h3 className="font-medium mb-2">Example Sentences</h3>
-            <div className="space-y-3">
-              {word.examples.map((example, index) => (
-                <div key={index} className="p-3 bg-muted rounded-md">
-                  <p className="font-medium">{example.balti}</p>
-                  <p className="text-muted-foreground">{example.english}</p>
-                </div>
+            <h3 className="font-medium mb-1">Regional Dialect</h3>
+            <p>{word.dialect}</p>
+          </div>
+        )}
+
+        {word.usageNotes && (
+          <div className="p-3 bg-muted rounded-md">
+            <div className="flex items-center gap-2 mb-2">
+              <Lightbulb className="h-4 w-4 text-amber-500" />
+              <h3 className="font-medium">Usage Notes</h3>
+            </div>
+            <p className="text-muted-foreground">{word.usageNotes}</p>
+          </div>
+        )}
+
+        {word.relatedWords && word.relatedWords.length > 0 && (
+          <div>
+            <h3 className="font-medium mb-2">Related Words</h3>
+            <div className="flex flex-wrap gap-2">
+              {word.relatedWords.map((relatedWord, index) => (
+                <Badge key={index} variant="outline">
+                  {relatedWord}
+                </Badge>
               ))}
             </div>
           </div>

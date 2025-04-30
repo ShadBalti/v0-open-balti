@@ -11,10 +11,12 @@ export async function GET(req: NextRequest) {
     await dbConnect()
     console.log("✅ API: MongoDB connected for fetching words")
 
-    // Get search query and category filter from URL if present
+    // Get search query and filters from URL if present
     const searchParams = req.nextUrl.searchParams
     const search = searchParams.get("search") || ""
     const category = searchParams.get("category") || ""
+    const dialect = searchParams.get("dialect") || ""
+    const difficulty = searchParams.get("difficulty") || ""
 
     let query: any = {}
 
@@ -28,6 +30,16 @@ export async function GET(req: NextRequest) {
     // Add category filter if category parameter exists
     if (category) {
       query.categories = category
+    }
+
+    // Add dialect filter if dialect parameter exists
+    if (dialect) {
+      query.dialect = dialect
+    }
+
+    // Add difficulty filter if difficulty parameter exists
+    if (difficulty) {
+      query.difficultyLevel = difficulty
     }
 
     const words = await Word.find(query).sort({ createdAt: -1 })

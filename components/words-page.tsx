@@ -24,6 +24,10 @@ import type { IWord } from "@/models/Word"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 
+// Add these imports after the existing imports
+import DialectBrowser from "@/components/dialect-browser"
+import DifficultyBrowser from "@/components/difficulty-browser"
+
 export default function WordsPage() {
   const { data: session } = useSession()
   const [words, setWords] = useState<IWord[]>([])
@@ -145,114 +149,120 @@ export default function WordsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between gap-4">
-        <div className="flex-1">
-          <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={toggleDirection} variant="outline" className="whitespace-nowrap">
-            <ArrowLeftRight className="mr-2 h-4 w-4" />
-            {direction === "balti-to-english" ? "Balti → English" : "English → Balti"}
-          </Button>
-          <Button onClick={() => fetchWords()} variant="outline" size="icon" aria-label="Refresh word list">
-            <RotateCw className="h-4 w-4" />
-          </Button>
-        </div>
+    <div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <DialectBrowser />
+        <DifficultyBrowser />
       </div>
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between gap-4">
+          <div className="flex-1">
+            <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={toggleDirection} variant="outline" className="whitespace-nowrap">
+              <ArrowLeftRight className="mr-2 h-4 w-4" />
+              {direction === "balti-to-english" ? "Balti → English" : "English → Balti"}
+            </Button>
+            <Button onClick={() => fetchWords()} variant="outline" size="icon" aria-label="Refresh word list">
+              <RotateCw className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
 
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "browse" | "add")} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="browse">Browse Dictionary</TabsTrigger>
-          {session ? (
-            <TabsTrigger value="add">Add New Word</TabsTrigger>
-          ) : (
-            <TabsTrigger value="add" disabled>
-              Add New Word (Login Required)
-            </TabsTrigger>
-          )}
-        </TabsList>
-        <TabsContent value="browse" className="mt-6">
-          {loading ? (
-            <div className="flex justify-center items-center py-16">
-              <div className="flex flex-col items-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
-                <p className="text-muted-foreground">Loading dictionary...</p>
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "browse" | "add")} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="browse">Browse Dictionary</TabsTrigger>
+            {session ? (
+              <TabsTrigger value="add">Add New Word</TabsTrigger>
+            ) : (
+              <TabsTrigger value="add" disabled>
+                Add New Word (Login Required)
+              </TabsTrigger>
+            )}
+          </TabsList>
+          <TabsContent value="browse" className="mt-6">
+            {loading ? (
+              <div className="flex justify-center items-center py-16">
+                <div className="flex flex-col items-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+                  <p className="text-muted-foreground">Loading dictionary...</p>
+                </div>
               </div>
-            </div>
-          ) : (
-            <WordList
-              words={words}
-              direction={direction}
-              onEdit={(word) => {
-                if (!session) {
-                  toast.error("Please log in to edit words")
-                  return
-                }
-                setEditingWord(word)
-                setActiveTab("add")
-              }}
-              onDelete={(id) => {
-                if (!session) {
-                  toast.error("Please log in to delete words")
-                  return
-                }
-                confirmDelete(id)
-              }}
-              showActions={!!session}
-            />
-          )}
-        </TabsContent>
-        <TabsContent value="add" className="mt-6">
-          {session ? (
-            <WordForm
-              initialData={editingWord}
-              onSubmit={editingWord ? (data) => handleUpdateWord(editingWord._id, data) : handleAddWord}
-              onCancel={editingWord ? () => setEditingWord(null) : undefined}
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center p-8 border rounded-md">
-              <p className="mb-4 text-muted-foreground">You need to be logged in to add or edit words</p>
-              <Button asChild>
-                <Link href="/auth/signin?callbackUrl=/">Sign In</Link>
-              </Button>
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+            ) : (
+              <WordList
+                words={words}
+                direction={direction}
+                onEdit={(word) => {
+                  if (!session) {
+                    toast.error("Please log in to edit words")
+                    return
+                  }
+                  setEditingWord(word)
+                  setActiveTab("add")
+                }}
+                onDelete={(id) => {
+                  if (!session) {
+                    toast.error("Please log in to delete words")
+                    return
+                  }
+                  confirmDelete(id)
+                }}
+                showActions={!!session}
+              />
+            )}
+          </TabsContent>
+          <TabsContent value="add" className="mt-6">
+            {session ? (
+              <WordForm
+                initialData={editingWord}
+                onSubmit={editingWord ? (data) => handleUpdateWord(editingWord._id, data) : handleAddWord}
+                onCancel={editingWord ? () => setEditingWord(null) : undefined}
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center p-8 border rounded-md">
+                <p className="mb-4 text-muted-foreground">You need to be logged in to add or edit words</p>
+                <Button asChild>
+                  <Link href="/auth/signin?callbackUrl=/">Sign In</Link>
+                </Button>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
 
-      <AlertDialog open={deleteConfirm.open} onOpenChange={(open) => setDeleteConfirm({ ...deleteConfirm, open })}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the word from the dictionary.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteWord}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        <AlertDialog open={deleteConfirm.open} onOpenChange={(open) => setDeleteConfirm({ ...deleteConfirm, open })}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the word from the dictionary.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteWord}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
-      <ToastContainer
-        position="bottom-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="colored"
-      />
+        <ToastContainer
+          position="bottom-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="colored"
+        />
+      </div>
     </div>
   )
 }

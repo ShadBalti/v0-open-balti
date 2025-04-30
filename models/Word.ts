@@ -5,7 +5,10 @@ export interface IWord extends Document {
   english: string
   phonetic?: string
   categories?: string[]
-  examples?: { balti: string; english: string }[]
+  dialect?: string
+  usageNotes?: string
+  relatedWords?: string[]
+  difficultyLevel?: "beginner" | "intermediate" | "advanced"
   reviewStatus?: "flagged" | "reviewed" | null
   createdBy?: string
   updatedBy?: string
@@ -33,14 +36,22 @@ const WordSchema: Schema = new Schema(
       type: [String],
       default: [],
     },
-    examples: {
-      type: [
-        {
-          balti: String,
-          english: String,
-        },
-      ],
+    dialect: {
+      type: String,
+      trim: true,
+    },
+    usageNotes: {
+      type: String,
+      trim: true,
+    },
+    relatedWords: {
+      type: [String],
       default: [],
+    },
+    difficultyLevel: {
+      type: String,
+      enum: ["beginner", "intermediate", "advanced"],
+      default: "intermediate",
     },
     reviewStatus: {
       type: String,
