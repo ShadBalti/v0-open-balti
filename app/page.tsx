@@ -3,7 +3,7 @@ import { Suspense } from "react"
 import { DictionaryStructuredData } from "@/components/structured-data"
 import { WordsPageSkeleton } from "@/components/skeletons/words-page-skeleton"
 import { HomePageContent } from "@/components/HomePageContent"
-import { WordOfTheDay } from "@/components/word-of-the-day"
+import WordOfTheDay from "@/components/word-of-the-day"
 
 export default function Home() {
   return (

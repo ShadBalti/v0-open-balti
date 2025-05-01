@@ -6,37 +6,42 @@ export async function GET() {
   try {
     await dbConnect()
 
-    // Use the current date to generate a deterministic seed
+    // Get the current date in YYYY-MM-DD format
     const today = new Date()
-    const dateString = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`
+    const dateString = today.toISOString().split("T")[0]
 
-    // Create a simple hash of the date string to use as a seed
-    let seed = 0
-    for (let i = 0; i < dateString.length; i++) {
-      seed = (seed << 5) - seed + dateString.charCodeAt(i)
-      seed = seed & seed // Convert to 32bit integer
-    }
+    // Use the date string as a seed for deterministic selection
+    // This ensures the same word is shown to all users on the same day
+    const dateSeed = dateString
+      .split("-")
+      .map(Number)
+      .reduce((a, b) => a + b, 0)
 
-    // Get total count of words
-    const totalWords = await Word.countDocuments()
+    // Count total words
+    const totalWords = await Word.countDocuments({ status: "approved" })
 
     if (totalWords === 0) {
-      return NextResponse.json({ error: "No words found" }, { status: 404 })
+      return NextResponse.json({ error: "No approved words found" }, { status: 404 })
     }
 
-    // Use the seed to select a word index
-    const wordIndex = Math.abs(seed) % totalWords
+    // Use the date seed to select a word
+    // This is a simple algorithm that rotates through words based on the date
+    const wordIndex = dateSeed % totalWords
 
-    // Skip to that index and get the word
-    const wordOfTheDay = await Word.findOne().skip(wordIndex).populate("createdBy", "name image").lean()
+    // Find the word at that index, sorted by creation date
+    const word = await Word.findOne({ status: "approved" })
+      .sort({ createdAt: 1 })
+      .skip(wordIndex)
+      .populate("createdBy", "name image")
+      .lean()
 
-    if (!wordOfTheDay) {
+    if (!word) {
       return NextResponse.json({ error: "Word of the day not found" }, { status: 404 })
     }
 
     return NextResponse.json({
-      word: wordOfTheDay,
-      date: today.toISOString().split("T")[0],
+      word,
+      date: today.toISOString(),
     })
   } catch (error) {
     console.error("Error fetching word of the day:", error)
