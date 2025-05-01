@@ -13,7 +13,7 @@ interface FeedbackBadgesProps {
   showLabels?: boolean
 }
 
-export default function FeedbackBadges({
+export function FeedbackBadges({
   feedbackStats = { useful: 0, trusted: 0, needsReview: 0 },
   size = "md",
   showLabels = false,
@@ -93,3 +93,5 @@ export default function FeedbackBadges({
     </div>
   )
 }
+
+export default FeedbackBadges

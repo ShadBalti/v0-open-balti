@@ -3,6 +3,8 @@ import { Suspense } from "react"
 import { DictionaryStructuredData } from "@/components/structured-data"
 import { WordsPageSkeleton } from "@/components/skeletons/words-page-skeleton"
 import { HomePageContent } from "@/components/HomePageContent"
+import { WordOfTheDay } from "@/components/word-of-the-day"
+
 export default function Home() {
   return (
     <div className="container py-8 md:py-12">
@@ -13,6 +15,9 @@ export default function Home() {
             Explore and contribute to the digital preservation of the Balti language
           </p>
         </div>
+
+        <WordOfTheDay className="mx-auto max-w-2xl" />
+
         <Suspense fallback={<WordsPageSkeleton />}>
           <WordsPage />
         </Suspense>
