@@ -1,17 +1,15 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
-import { Loader2, RotateCw, ArrowLeftRight, Filter, Plus, X } from "lucide-react"
+import { Loader2, Search } from "lucide-react"
 import WordList from "@/components/word-list"
 import WordForm from "@/components/word-form"
-import SearchBar from "@/components/search-bar"
-import DialectBrowser from "@/components/dialect-browser"
-import DifficultyBrowser from "@/components/difficulty-browser"
-import FeedbackFilter from "@/components/feedback-filter"
 import type { IWord } from "@/models/Word"
 
 import { Button } from "@/components/ui/button"
@@ -26,25 +24,16 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-  SheetFooter,
-  SheetClose,
-} from "@/components/ui/sheet"
-import { Badge } from "@/components/ui/badge"
-import { Card } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 
 export default function WordsPage() {
   const { data: session } = useSession()
   const { toast } = useToast()
   const router = useRouter()
   const searchParams = useSearchParams()
-
+  const initialQuery = searchParams.get("q") || ""
+  const [searchQuery, setSearchQuery] = useState(initialQuery)
   const [words, setWords] = useState<IWord[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
@@ -52,7 +41,7 @@ export default function WordsPage() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [wordToDelete, setWordToDelete] = useState<string | null>(null)
   const [direction, setDirection] = useState<"balti-to-english" | "english-to-balti">("balti-to-english")
-  const [activeTab, setActiveTab] = useState<"browse" | "add">("browse")
+  const [activeTab, setActiveTab] = useState<"browse" | "add" | "all" | "recent" | "popular">("browse")
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [selectedDialect, setSelectedDialect] = useState<string | null>(null)
   const [selectedDifficulty, setSelectedDifficulty] = useState<string | null>(null)
@@ -83,6 +72,9 @@ export default function WordsPage() {
     if (difficulty) count++
     if (feedback) count++
     setActiveFiltersCount(count)
+
+    // Update search query when URL parameter changes
+    setSearchQuery(searchParams.get("q") || "")
   }, [searchParams])
 
   const fetchWords = async (
@@ -321,226 +313,113 @@ export default function WordsPage() {
     setDirection((prev) => (prev === "balti-to-english" ? "english-to-balti" : "balti-to-english"))
   }
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      router.push(`/?q=${encodeURIComponent(searchQuery.trim())}`)
+    } else {
+      router.push("/")
+    }
+  }
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between gap-4 items-start md:items-center">
-        <h1 className="text-2xl font-bold tracking-tight sr-only">Balti Dictionary</h1>
-        <div className="flex-1 w-full md:w-auto">
-          <SearchBar
-            searchTerm={searchTerm}
-            setSearchTerm={handleSearchChange}
-            placeholder="Search the dictionary..."
-            aria-label="Search for words"
+    <Card>
+      <CardHeader>
+        <CardTitle>Dictionary</CardTitle>
+        <CardDescription>Browse and search for Balti words and their translations</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <form onSubmit={handleSearch} className="flex w-full max-w-sm items-center space-x-2">
+          <Input
+            type="search"
+            placeholder="Search words..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="flex-1"
           />
-        </div>
+          <Button type="submit">
+            <Search className="h-4 w-4 mr-2" />
+            Search
+          </Button>
+        </form>
 
-        <div className="flex flex-wrap gap-2 w-full md:w-auto">
-          <Sheet open={showFiltersSheet} onOpenChange={setShowFiltersSheet}>
-            <SheetTrigger asChild>
-              <Button variant="outline" className="flex gap-2">
-                <Filter className="h-4 w-4" />
-                <span>Filters</span>
-                {activeFiltersCount > 0 && (
-                  <Badge variant="secondary" className="ml-1">
-                    {activeFiltersCount}
-                  </Badge>
-                )}
-              </Button>
-            </SheetTrigger>
-            <SheetContent className="overflow-y-auto">
-              <SheetHeader>
-                <SheetTitle>Filter Dictionary</SheetTitle>
-                <SheetDescription>
-                  Filter words by category, dialect, difficulty, and community feedback.
-                </SheetDescription>
-              </SheetHeader>
-
-              <div className="py-4 space-y-6">
-                <DialectBrowser selectedDialect={selectedDialect} onDialectChange={handleDialectChange} inline />
-
-                <DifficultyBrowser
-                  selectedDifficulty={selectedDifficulty}
-                  onDifficultyChange={handleDifficultyChange}
-                  inline
-                />
-
-                <FeedbackFilter selectedFeedback={selectedFeedback} onFeedbackChange={handleFeedbackChange} inline />
-              </div>
-
-              <SheetFooter>
-                <div className="flex justify-between w-full">
-                  <Button variant="outline" onClick={clearAllFilters} disabled={activeFiltersCount === 0}>
-                    Clear all
-                  </Button>
-                  <SheetClose asChild>
-                    <Button>Apply filters</Button>
-                  </SheetClose>
+        <Tabs
+          defaultValue="all"
+          value={activeTab}
+          onValueChange={(value) => setActiveTab(value as "browse" | "add" | "all" | "recent" | "popular")}
+        >
+          <TabsList>
+            <TabsTrigger value="all">All Words</TabsTrigger>
+            <TabsTrigger value="recent">Recent</TabsTrigger>
+            <TabsTrigger value="popular">Popular</TabsTrigger>
+            {session && <TabsTrigger value="add">{editingWord ? "Edit Word" : "Add New Word"}</TabsTrigger>}
+          </TabsList>
+          <TabsContent value="all" className="space-y-4">
+            <WordList query={searchQuery} sort="alphabetical" />
+          </TabsContent>
+          <TabsContent value="recent" className="space-y-4">
+            <WordList query={searchQuery} sort="recent" />
+          </TabsContent>
+          <TabsContent value="popular" className="space-y-4">
+            <WordList query={searchQuery} sort="popular" />
+          </TabsContent>
+          <TabsContent value="browse" className="focus:outline-none">
+            {isLoading ? (
+              <div className="flex justify-center items-center py-16">
+                <div className="flex flex-col items-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" aria-hidden="true" />
+                  <p className="text-muted-foreground">Loading dictionary...</p>
                 </div>
-              </SheetFooter>
-            </SheetContent>
-          </Sheet>
-
-          <Button
-            onClick={toggleDirection}
-            variant="outline"
-            size="icon"
-            aria-label={`Toggle direction to ${direction === "balti-to-english" ? "English to Balti" : "Balti to English"}`}
-          >
-            <ArrowLeftRight className="h-4 w-4" />
-          </Button>
-
-          <Button onClick={() => fetchWords()} variant="outline" size="icon" aria-label="Refresh word list">
-            <RotateCw className="h-4 w-4" />
-          </Button>
-
-          {session && (
-            <Button onClick={() => setActiveTab("add")} variant="default" className="gap-1">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Add Word</span>
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {activeFiltersCount > 0 && (
-        <div className="flex flex-wrap gap-2 items-center">
-          <span className="text-sm text-muted-foreground">Active filters:</span>
-          {selectedCategory && (
-            <Badge variant="outline" className="flex items-center gap-1">
-              Category: {selectedCategory}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-4 w-4 p-0 hover:bg-transparent"
-                onClick={() => handleCategoryChange(null)}
-                aria-label={`Remove category filter: ${selectedCategory}`}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </Badge>
-          )}
-          {selectedDialect && (
-            <Badge variant="outline" className="flex items-center gap-1">
-              Dialect: {selectedDialect}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-4 w-4 p-0 hover:bg-transparent"
-                onClick={() => handleDialectChange(null)}
-                aria-label={`Remove dialect filter: ${selectedDialect}`}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </Badge>
-          )}
-          {selectedDifficulty && (
-            <Badge variant="outline" className="flex items-center gap-1">
-              Difficulty: {selectedDifficulty}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-4 w-4 p-0 hover:bg-transparent"
-                onClick={() => handleDifficultyChange(null)}
-                aria-label={`Remove difficulty filter: ${selectedDifficulty}`}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </Badge>
-          )}
-          {selectedFeedback && (
-            <Badge variant="outline" className="flex items-center gap-1">
-              Feedback: {selectedFeedback}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-4 w-4 p-0 hover:bg-transparent"
-                onClick={() => handleFeedbackChange(null)}
-                aria-label={`Remove feedback filter: ${selectedFeedback}`}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </Badge>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-xs"
-            onClick={clearAllFilters}
-            aria-label="Clear all filters"
-          >
-            Clear all
-          </Button>
-        </div>
-      )}
-
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "browse" | "add")} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-6">
-          <TabsTrigger value="browse">Browse Dictionary</TabsTrigger>
-          {session ? (
-            <TabsTrigger value="add">{editingWord ? "Edit Word" : "Add New Word"}</TabsTrigger>
-          ) : (
-            <TabsTrigger value="add" disabled>
-              Add New Word (Login Required)
-            </TabsTrigger>
-          )}
-        </TabsList>
-
-        <TabsContent value="browse" className="focus:outline-none">
-          {isLoading ? (
-            <div className="flex justify-center items-center py-16">
-              <div className="flex flex-col items-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" aria-hidden="true" />
-                <p className="text-muted-foreground">Loading dictionary...</p>
               </div>
-            </div>
-          ) : words.length > 0 ? (
-            <WordList
-              words={words}
-              direction={direction}
-              onEdit={handleEditWord}
-              onDelete={confirmDelete}
-              showActions={!!session}
-            />
-          ) : (
-            <Card className="p-8 text-center">
-              <div className="flex flex-col items-center justify-center gap-4">
-                <p className="text-muted-foreground">No words found</p>
-                {searchTerm || activeFiltersCount > 0 ? (
-                  <Button variant="outline" onClick={clearAllFilters}>
-                    Clear all filters
-                  </Button>
-                ) : session ? (
-                  <Button onClick={() => setActiveTab("add")}>Add your first word</Button>
-                ) : (
-                  <Button asChild>
-                    <Link href="/auth/signin">Sign in to add words</Link>
-                  </Button>
-                )}
-              </div>
-            </Card>
-          )}
-        </TabsContent>
+            ) : words.length > 0 ? (
+              <WordList
+                words={words}
+                direction={direction}
+                onEdit={handleEditWord}
+                onDelete={confirmDelete}
+                showActions={!!session}
+              />
+            ) : (
+              <Card className="p-8 text-center">
+                <div className="flex flex-col items-center justify-center gap-4">
+                  <p className="text-muted-foreground">No words found</p>
+                  {searchTerm || activeFiltersCount > 0 ? (
+                    <Button variant="outline" onClick={clearAllFilters}>
+                      Clear all filters
+                    </Button>
+                  ) : session ? (
+                    <Button onClick={() => setActiveTab("add")}>Add your first word</Button>
+                  ) : (
+                    <Button asChild>
+                      <Link href="/auth/signin">Sign in to add words</Link>
+                    </Button>
+                  )}
+                </div>
+              </Card>
+            )}
+          </TabsContent>
 
-        <TabsContent value="add" className="focus:outline-none">
-          {session ? (
-            <WordForm
-              initialData={editingWord}
-              onSubmit={editingWord ? handleUpdateWord : handleAddWord}
-              onCancel={() => {
-                setEditingWord(null)
-                setActiveTab("browse")
-              }}
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center p-8 border rounded-md">
-              <p className="mb-4 text-muted-foreground">You need to be logged in to add or edit words</p>
-              <Button asChild>
-                <Link href="/auth/signin?callbackUrl=/">Sign In</Link>
-              </Button>
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="add" className="focus:outline-none">
+            {session ? (
+              <WordForm
+                initialData={editingWord}
+                onSubmit={editingWord ? handleUpdateWord : handleAddWord}
+                onCancel={() => {
+                  setEditingWord(null)
+                  setActiveTab("browse")
+                }}
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center p-8 border rounded-md">
+                <p className="mb-4 text-muted-foreground">You need to be logged in to add or edit words</p>
+                <Button asChild>
+                  <Link href="/auth/signin?callbackUrl=/">Sign In</Link>
+                </Button>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      </CardContent>
 
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>
@@ -562,6 +441,6 @@ export default function WordsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </Card>
   )
 }

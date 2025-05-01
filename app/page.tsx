@@ -3,7 +3,7 @@ import { Suspense } from "react"
 import { DictionaryStructuredData } from "@/components/structured-data"
 import { WordsPageSkeleton } from "@/components/skeletons/words-page-skeleton"
 import { HomePageContent } from "@/components/HomePageContent"
-import WordOfTheDay from "@/components/word-of-the-day"
+import WordOfTheDayStatic from "@/components/word-of-the-day-static"
 
 export default function Home() {
   return (
@@ -16,7 +16,7 @@ export default function Home() {
           </p>
         </div>
 
-        <WordOfTheDay className="mx-auto max-w-2xl" />
+        <WordOfTheDayStatic />
 
         <Suspense fallback={<WordsPageSkeleton />}>
           <WordsPage />
