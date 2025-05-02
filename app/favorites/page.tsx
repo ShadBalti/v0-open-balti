@@ -1,6 +1,6 @@
 import { Suspense } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
-import FavoritesList from "@/components/favorites-list"
+import FavoritesClient from "./client"
 
 export const metadata = {
   title: "My Favorites - OpenBalti Dictionary",
@@ -25,7 +25,7 @@ export default function FavoritesPage() {
             </div>
           }
         >
-          <FavoritesList />
+          <FavoritesClient />
         </Suspense>
       </div>
     </div>
