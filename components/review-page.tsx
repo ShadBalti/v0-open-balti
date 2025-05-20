@@ -1,5 +1,7 @@
 "use client"
 
+import { Skeleton } from "@/components/ui/skeleton"
+
 import { useState, useEffect } from "react"
 import { toast, ToastContainer } from "react-toastify"
 import "react-toastify/dist/ReactToastify.css"
@@ -42,8 +44,11 @@ export default function ReviewPage() {
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "balti" | "english">("newest")
   const [reviewFilter, setReviewFilter] = useState<"all" | "flagged" | "reviewed">("all")
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
+    setIsMounted(true)
+
     // If not authenticated and authentication check is complete, redirect to login
     if (status === "unauthenticated") {
       toast.error("You need to be signed in to access the review page.")
@@ -58,8 +63,10 @@ export default function ReviewPage() {
   }, [status, router])
 
   useEffect(() => {
-    filterAndSortWords()
-  }, [words, searchTerm, sortBy, reviewFilter])
+    if (isMounted) {
+      filterAndSortWords()
+    }
+  }, [words, searchTerm, sortBy, reviewFilter, isMounted])
 
   const fetchWords = async () => {
     try {
@@ -81,14 +88,19 @@ export default function ReviewPage() {
   }
 
   const filterAndSortWords = () => {
+    if (!words || words.length === 0) {
+      setFilteredWords([])
+      return
+    }
+
     let filtered = [...words]
 
     // Apply search filter
     if (searchTerm) {
       filtered = filtered.filter(
         (word) =>
-          word.balti.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          word.english.toLowerCase().includes(searchTerm.toLowerCase()),
+          word.balti?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          word.english?.toLowerCase().includes(searchTerm.toLowerCase()),
       )
     }
 
@@ -105,9 +117,9 @@ export default function ReviewPage() {
         case "oldest":
           return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
         case "balti":
-          return a.balti.localeCompare(b.balti)
+          return (a.balti || "").localeCompare(b.balti || "")
         case "english":
-          return a.english.localeCompare(b.english)
+          return (a.english || "").localeCompare(b.english || "")
         default:
           return 0
       }
@@ -232,8 +244,8 @@ export default function ReviewPage() {
   const startEditing = (word: IWord) => {
     setEditingWord(word)
     setEditForm({
-      balti: word.balti,
-      english: word.english,
+      balti: word.balti || "",
+      english: word.english || "",
     })
   }
 
@@ -301,6 +313,17 @@ export default function ReviewPage() {
           <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
           <p className="text-muted-foreground">Loading...</p>
         </div>
+      </div>
+    )
+  }
+
+  // If not mounted yet, show loading skeleton
+  if (!isMounted) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-10 w-full max-w-md" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-64 w-full" />
       </div>
     )
   }
@@ -397,8 +420,8 @@ export default function ReviewPage() {
                     <TableBody>
                       {filteredWords.map((word) => (
                         <TableRow key={word._id} className="group">
-                          <TableCell className="font-medium">{word.balti}</TableCell>
-                          <TableCell>{word.english}</TableCell>
+                          <TableCell className="font-medium">{word.balti || "—"}</TableCell>
+                          <TableCell>{word.english || "—"}</TableCell>
                           <TableCell>{getReviewStatusBadge(word.reviewStatus)}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-1">

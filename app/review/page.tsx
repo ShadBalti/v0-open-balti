@@ -9,6 +9,9 @@ export const metadata = generateMetadata(
   "Help improve the OpenBalti dictionary by reviewing and editing entries for accuracy and completeness.",
 )
 
+// Add this to prevent static prerendering of this page
+export const dynamic = "force-dynamic"
+
 export default function Review() {
   return (
     <div className="container py-8 md:py-12">
