@@ -18,6 +18,11 @@ export interface IWord extends Document {
     trusted: number
     needsReview: number
   }
+  examples?: Array<{
+    balti: string
+    english: string
+  }>
+  audioUrl?: string
 }
 
 const WordSchema = new Schema(
@@ -80,11 +85,31 @@ const WordSchema = new Schema(
         default: 0,
       },
     },
+    examples: {
+      type: [
+        {
+          balti: String,
+          english: String,
+        },
+      ],
+      default: [],
+    },
+    audioUrl: {
+      type: String,
+      trim: true,
+    },
   },
   { timestamps: true },
 )
 
 // Create text indexes for search
 WordSchema.index({ balti: "text", english: "text" })
+
+// Add additional indexes for common queries
+WordSchema.index({ categories: 1 })
+WordSchema.index({ dialect: 1 })
+WordSchema.index({ difficultyLevel: 1 })
+WordSchema.index({ createdAt: -1 })
+WordSchema.index({ "feedbackStats.useful": -1 })
 
 export default mongoose.models.Word || mongoose.model<IWord>("Word", WordSchema)

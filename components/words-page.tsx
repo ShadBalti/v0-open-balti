@@ -316,9 +316,9 @@ export default function WordsPage() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     if (searchQuery.trim()) {
-      router.push(`/?q=${encodeURIComponent(searchQuery.trim())}`)
+      updateUrl(searchQuery.trim(), selectedCategory, selectedDialect, selectedDifficulty, selectedFeedback)
     } else {
-      router.push("/")
+      updateUrl("", selectedCategory, selectedDialect, selectedDifficulty, selectedFeedback)
     }
   }
 

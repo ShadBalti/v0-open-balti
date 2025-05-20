@@ -32,7 +32,7 @@ interface ActivityLogListProps {
   limit?: number
 }
 
-export default function ActivityLogList({ userId, wordId, limit = 10 }: ActivityLogListProps) {
+export function ActivityLogList({ userId, wordId, limit = 10 }: ActivityLogListProps) {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [logs, setLogs] = useState<ActivityLog[]>([])
@@ -234,3 +234,5 @@ export default function ActivityLogList({ userId, wordId, limit = 10 }: Activity
     </div>
   )
 }
+
+export default ActivityLogList

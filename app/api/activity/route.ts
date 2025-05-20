@@ -13,9 +13,17 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Authentication required" }, { status: 401 })
     }
 
-    console.log("🔄 API: Connecting to MongoDB for fetching activity logs...")
-    await dbConnect()
-    console.log("✅ API: MongoDB connected for fetching activity logs")
+    try {
+      console.log("🔄 API: Connecting to MongoDB for fetching activity logs...")
+      await dbConnect()
+      console.log("✅ API: MongoDB connected for fetching activity logs")
+    } catch (dbError) {
+      console.error("❌ API: MongoDB connection error:", dbError)
+      return NextResponse.json(
+        { success: false, error: "Database connection failed. Please try again later." },
+        { status: 503 },
+      )
+    }
 
     // Get query parameters
     const searchParams = req.nextUrl.searchParams

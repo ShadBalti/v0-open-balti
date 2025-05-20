@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
@@ -207,10 +207,31 @@ export default function WordDetailPage({ word }: WordDetailPageProps) {
     setTimeout(() => setIsPlaying(false), 1000)
   }
 
-  // Check favorite status on component mount
-  useState(() => {
+  // Replace the useState call for checking favorite status with useEffect
+  useEffect(() => {
+    const checkFavoriteStatus = async () => {
+      if (!session) return
+
+      try {
+        const response = await fetch("/api/favorites")
+        const result = await response.json()
+
+        if (result.success) {
+          const favorites = result.data
+          setIsFavorite(favorites.some((fav: any) => fav.wordId._id === word._id))
+        }
+      } catch (error) {
+        console.error("Error checking favorite status:", error)
+      }
+    }
+
     checkFavoriteStatus()
-  })
+  }, [session, word._id])
+
+  // Remove the useState call that was incorrectly trying to run an effect
+  // useState(() => {
+  //   checkFavoriteStatus();
+  // });
 
   return (
     <div className="space-y-6">

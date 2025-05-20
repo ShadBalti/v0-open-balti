@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { IWord } from "@/models/Word"
+import { useToast } from "@/hooks/use-toast"
 
 interface WordFormProps {
   initialData: IWord | null
@@ -24,6 +25,7 @@ interface WordFormProps {
     usageNotes?: string
     relatedWords?: string[]
     difficultyLevel?: "beginner" | "intermediate" | "advanced"
+    examples?: Array<{ balti: string; english: string }>
   }) => void
   onCancel?: () => void
 }
@@ -40,6 +42,11 @@ export default function WordForm({ initialData, onSubmit, onCancel }: WordFormPr
   const [relatedWords, setRelatedWords] = useState<string[]>([])
   const [difficultyLevel, setDifficultyLevel] = useState<"beginner" | "intermediate" | "advanced">("intermediate")
   const [errors, setErrors] = useState({ balti: "", english: "" })
+  const [examples, setExamples] = useState<Array<{ balti: string; english: string }>>([])
+  const [exampleBalti, setExampleBalti] = useState("")
+  const [exampleEnglish, setExampleEnglish] = useState("")
+
+  const { toast } = useToast()
 
   useEffect(() => {
     if (initialData) {
@@ -51,6 +58,7 @@ export default function WordForm({ initialData, onSubmit, onCancel }: WordFormPr
       setUsageNotes(initialData.usageNotes || "")
       setRelatedWords(initialData.relatedWords || [])
       setDifficultyLevel(initialData.difficultyLevel || "intermediate")
+      setExamples(initialData.examples || [])
       setErrors({ balti: "", english: "" })
     } else {
       setBalti("")
@@ -61,6 +69,7 @@ export default function WordForm({ initialData, onSubmit, onCancel }: WordFormPr
       setUsageNotes("")
       setRelatedWords([])
       setDifficultyLevel("intermediate")
+      setExamples([])
       setErrors({ balti: "", english: "" })
     }
   }, [initialData])
@@ -77,6 +86,19 @@ export default function WordForm({ initialData, onSubmit, onCancel }: WordFormPr
     if (!english.trim()) {
       newErrors.english = "English translation is required"
       isValid = false
+    }
+
+    // Validate examples if any are present
+    if (examples.length > 0) {
+      const invalidExamples = examples.some((ex) => !ex.balti.trim() || !ex.english.trim())
+      if (invalidExamples) {
+        toast({
+          title: "Invalid examples",
+          description: "All example sentences must have both Balti and English text",
+          variant: "destructive",
+        })
+        isValid = false
+      }
     }
 
     setErrors(newErrors)
@@ -99,6 +121,7 @@ export default function WordForm({ initialData, onSubmit, onCancel }: WordFormPr
       usageNotes: usageNotes.trim() || undefined,
       relatedWords: relatedWords.length > 0 ? relatedWords : undefined,
       difficultyLevel,
+      examples: examples.length > 0 ? examples : undefined,
     })
 
     if (!initialData) {
@@ -111,6 +134,7 @@ export default function WordForm({ initialData, onSubmit, onCancel }: WordFormPr
       setUsageNotes("")
       setRelatedWords([])
       setDifficultyLevel("intermediate")
+      setExamples([])
     }
   }
 
@@ -134,6 +158,18 @@ export default function WordForm({ initialData, onSubmit, onCancel }: WordFormPr
 
   const removeRelatedWord = (word: string) => {
     setRelatedWords(relatedWords.filter((w) => w !== word))
+  }
+
+  const addExample = () => {
+    if (exampleBalti.trim() && exampleEnglish.trim()) {
+      setExamples([...examples, { balti: exampleBalti.trim(), english: exampleEnglish.trim() }])
+      setExampleBalti("")
+      setExampleEnglish("")
+    }
+  }
+
+  const removeExample = (index: number) => {
+    setExamples(examples.filter((_, i) => i !== index))
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -313,6 +349,72 @@ export default function WordForm({ initialData, onSubmit, onCancel }: WordFormPr
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">Indicates how difficult this word is for language learners</p>
+          </div>
+
+          {/* Example Sentences Section */}
+          <div className="space-y-4 border-t pt-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="examples">Example Sentences</Label>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="exampleBalti" className="text-sm">
+                  Balti Example
+                </Label>
+                <Input
+                  id="exampleBalti"
+                  value={exampleBalti}
+                  onChange={(e) => setExampleBalti(e.target.value)}
+                  placeholder="Example sentence in Balti"
+                />
+              </div>
+              <div>
+                <Label htmlFor="exampleEnglish" className="text-sm">
+                  English Translation
+                </Label>
+                <Input
+                  id="exampleEnglish"
+                  value={exampleEnglish}
+                  onChange={(e) => setExampleEnglish(e.target.value)}
+                  placeholder="Translation in English"
+                />
+              </div>
+            </div>
+            <Button
+              type="button"
+              onClick={addExample}
+              variant="outline"
+              size="sm"
+              disabled={!exampleBalti.trim() || !exampleEnglish.trim()}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add Example
+            </Button>
+
+            {examples.length > 0 && (
+              <div className="space-y-2 mt-2">
+                <Label>Added Examples</Label>
+                <div className="space-y-2">
+                  {examples.map((example, index) => (
+                    <div key={index} className="flex items-start justify-between p-2 border rounded-md">
+                      <div className="space-y-1">
+                        <p className="font-medium">{example.balti}</p>
+                        <p className="text-sm text-muted-foreground">{example.english}</p>
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={() => removeExample(index)}
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
         <CardFooter className="flex justify-between">

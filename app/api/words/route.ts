@@ -8,11 +8,13 @@ import { logActivity } from "@/lib/activity-logger"
 export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url)
-    const search = url.searchParams.get("search") || ""
+    const search = url.searchParams.get("search") || url.searchParams.get("q") || ""
     const category = url.searchParams.get("category")
     const dialect = url.searchParams.get("dialect")
     const difficulty = url.searchParams.get("difficulty")
     const feedbackFilter = url.searchParams.get("feedback")
+    const sort = url.searchParams.get("sort") || "alphabetical"
+    const limit = Number.parseInt(url.searchParams.get("limit") || "50", 10)
 
     await dbConnect()
 
@@ -43,7 +45,22 @@ export async function GET(req: NextRequest) {
       query[`feedbackStats.${feedbackFilter}`] = { $gt: 0 }
     }
 
-    const words = await Word.find(query).sort({ createdAt: -1 })
+    // Determine sort order
+    let sortOptions: any = {}
+    switch (sort) {
+      case "recent":
+        sortOptions = { createdAt: -1 }
+        break
+      case "popular":
+        sortOptions = { "feedbackStats.useful": -1 }
+        break
+      case "alphabetical":
+      default:
+        sortOptions = { balti: 1 }
+        break
+    }
+
+    const words = await Word.find(query).sort(sortOptions).limit(limit).populate("createdBy", "name image").lean()
 
     return NextResponse.json({ success: true, data: words })
   } catch (error) {

@@ -2,72 +2,60 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
+import { Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
-import { Search, X } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 interface SearchBarProps {
-  searchTerm: string
-  setSearchTerm: (term: string) => void
+  initialValue?: string
+  onSearch: (term: string) => void
+  placeholder?: string
 }
 
-export default function SearchBar({ searchTerm, setSearchTerm }: SearchBarProps) {
-  const [inputValue, setInputValue] = useState(searchTerm)
-  const [debouncedValue, setDebouncedValue] = useState(searchTerm)
+export default function SearchBar({ initialValue = "", onSearch, placeholder = "Search..." }: SearchBarProps) {
+  const [searchTerm, setSearchTerm] = useState(initialValue)
 
-  // Update input value when searchTerm prop changes
+  // Debounce search to avoid excessive API calls
+  const debouncedSearch = useCallback(
+    debounce((term: string) => {
+      onSearch(term)
+    }, 300),
+    [onSearch],
+  )
+
   useEffect(() => {
-    setInputValue(searchTerm)
-  }, [searchTerm])
+    setSearchTerm(initialValue)
+  }, [initialValue])
 
-  // Debounce input value
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedValue(inputValue)
-    }, 300)
-
-    return () => {
-      clearTimeout(timer)
-    }
-  }, [inputValue])
-
-  // Update search term when debounced value changes
-  useEffect(() => {
-    setSearchTerm(debouncedValue)
-  }, [debouncedValue, setSearchTerm])
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    setSearchTerm(inputValue)
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setSearchTerm(value)
+    debouncedSearch(value)
   }
 
-  const clearSearch = () => {
-    setInputValue("")
-    setSearchTerm("")
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onSearch(searchTerm)
   }
 
   return (
-    <form onSubmit={handleSearch} className="relative w-full max-w-md">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          type="text"
-          placeholder="Search words..."
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          className="pl-10 pr-10"
-        />
-        {inputValue && (
-          <button
-            type="button"
-            onClick={clearSearch}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            aria-label="Clear search"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        )}
+    <form onSubmit={handleSubmit} className="flex w-full items-center space-x-2">
+      <div className="relative flex-1">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input type="search" placeholder={placeholder} value={searchTerm} onChange={handleChange} className="pl-8" />
       </div>
+      <Button type="submit">Search</Button>
     </form>
   )
+}
+
+// Debounce utility function
+function debounce<T extends (...args: any[]) => any>(func: T, wait: number): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout | null = null
+
+  return (...args: Parameters<T>) => {
+    if (timeout) clearTimeout(timeout)
+    timeout = setTimeout(() => func(...args), wait)
+  }
 }

@@ -1,91 +1,106 @@
 import type { Metadata } from "next"
-export const baseMetadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://openbalti.vercel.app"),
+
+// Base metadata configuration
+const baseMetadata = {
   title: {
-    default: "OpenBalti Dictionary | Free Online Balti Language Resource",
+    default: "OpenBalti Dictionary",
     template: "%s | OpenBalti Dictionary",
   },
   description:
-    "OpenBalti is a comprehensive and user-friendly online dictionary that helps you translate and learn the Balti language. Explore Balti to English and English to Balti translations, linguistic insights, and cultural context for language preservation.",
-  keywords: [
-    "Balti language",
-    "Balti dictionary online",
-    "learn Balti language",
-    "Balti to English translation",
-    "English to Balti translator",
-    "Baltistan language",
-    "language preservation project",
-    "Tibetan dialects",
-    "Balti script",
-    "Balti culture",
-    "online language tool",
-    "dictionary for Balti words",
-  ],
+    "A comprehensive online dictionary for the Balti language, preserving and promoting the linguistic heritage of Baltistan.",
+  keywords: ["Balti", "dictionary", "language", "Baltistan", "linguistics", "translation", "learning"],
   authors: [{ name: "OpenBalti Team" }],
-  creator: "OpenBalti Project",
+  creator: "OpenBalti Community",
   publisher: "OpenBalti Project",
-  robots: {
-    index: true,
-    follow: true,
-    nocache: false,
-  },
-  alternates: {
-    canonical: "https://openbalti.vercel.app",
-  },
   formatDetection: {
     email: false,
     address: false,
     telephone: false,
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "OpenBalti Dictionary",
-    description:
-      "OpenBalti is a comprehensive and user-friendly online dictionary that helps you translate and learn the Balti language.",
-    images: ["/android-chrome-512x512.png"],
-    creator: "@openbalti",
-  },
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://openbalti.vercel.app"),
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://openbalti.vercel.app",
-    title: "OpenBalti Dictionary",
-    description:
-      "OpenBalti is a comprehensive and user-friendly online dictionary that helps you translate and learn the Balti language.",
+    url: process.env.NEXT_PUBLIC_APP_URL || "https://openbalti.vercel.app",
     siteName: "OpenBalti Dictionary",
+    title: "OpenBalti Dictionary",
+    description: "A comprehensive online dictionary for the Balti language",
     images: [
       {
-        url: "/android-chrome-512x512.png",
-        width: 1200,
-        height: 630,
-        alt: "OpenBalti Dictionary",
+        url: "/logo.png",
+        width: 512,
+        height: 512,
+        alt: "OpenBalti Dictionary Logo",
       },
     ],
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "OpenBalti Dictionary",
+    description: "A comprehensive online dictionary for the Balti language",
+    images: ["/logo.png"],
+    creator: "@openbalti",
+  },
   icons: {
     icon: "/favicon.ico",
-    shortcut: "/favicon-16x16.png",
+    shortcut: "/favicon.ico",
     apple: "/apple-touch-icon.png",
+    other: {
+      rel: "apple-touch-icon-precomposed",
+      url: "/apple-touch-icon-precomposed.png",
+    },
   },
   manifest: "/site.webmanifest",
+  alternates: {
+    canonical: "/",
+    languages: {
+      "en-US": "/en-US",
+    },
+  },
 }
 
-// Helper function to generate metadata for specific pages
-export function generateMetadata(title: string, description?: string, overrides: Partial<Metadata> = {}): Metadata {
+// Generate metadata for specific pages
+export function generateMetadata(
+  pageTitle?: string,
+  pageDescription?: string,
+  pageImage?: string,
+  pageUrl?: string,
+): Metadata {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://openbalti.vercel.app"
+
   return {
     ...baseMetadata,
-    title,
-    description: description || baseMetadata.description,
+    title: pageTitle || baseMetadata.title,
+    description: pageDescription || baseMetadata.description,
     openGraph: {
       ...baseMetadata.openGraph,
-      title,
-      description: description || baseMetadata.openGraph?.description,
+      title: pageTitle || baseMetadata.openGraph.title,
+      description: pageDescription || baseMetadata.openGraph.description,
+      images: pageImage
+        ? [
+            {
+              url: pageImage.startsWith("http") ? pageImage : `${baseUrl}${pageImage}`,
+              width: 1200,
+              height: 630,
+              alt: pageTitle || "OpenBalti Dictionary",
+            },
+          ]
+        : baseMetadata.openGraph.images,
+      url: pageUrl ? `${baseUrl}${pageUrl}` : baseMetadata.openGraph.url,
     },
     twitter: {
       ...baseMetadata.twitter,
-      title,
-      description: description || baseMetadata.twitter?.description,
+      title: pageTitle || baseMetadata.twitter.title,
+      description: pageDescription || baseMetadata.twitter.description,
+      images: pageImage
+        ? [pageImage.startsWith("http") ? pageImage : `${baseUrl}${pageImage}`]
+        : baseMetadata.twitter.images,
     },
-    ...overrides,
+    alternates: {
+      ...baseMetadata.alternates,
+      canonical: pageUrl || baseMetadata.alternates.canonical,
+    },
   }
 }
+
+export default baseMetadata
