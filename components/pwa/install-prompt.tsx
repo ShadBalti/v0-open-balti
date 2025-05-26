@@ -2,81 +2,86 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { X, Download } from "lucide-react"
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt(): Promise<void>
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>
-}
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Download, X, Smartphone } from "lucide-react"
+import { usePWA } from "./pwa-provider"
 
 export function InstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
+  const { canInstall, isInstalled, installPrompt } = usePWA()
   const [showPrompt, setShowPrompt] = useState(false)
+  const [dismissed, setDismissed] = useState(false)
 
   useEffect(() => {
-    const handler = (e: Event) => {
-      e.preventDefault()
-      setDeferredPrompt(e as BeforeInstallPromptEvent)
-
-      // Show prompt after 3 seconds
-      setTimeout(() => {
+    // Show prompt after 3 seconds if app can be installed and hasn't been dismissed
+    const timer = setTimeout(() => {
+      if (canInstall && !isInstalled && !dismissed) {
         setShowPrompt(true)
-      }, 3000)
-    }
+      }
+    }, 3000)
 
-    window.addEventListener("beforeinstallprompt", handler)
+    return () => clearTimeout(timer)
+  }, [canInstall, isInstalled, dismissed])
 
-    return () => {
-      window.removeEventListener("beforeinstallprompt", handler)
+  useEffect(() => {
+    // Hide prompt if app gets installed
+    if (isInstalled) {
+      setShowPrompt(false)
     }
-  }, [])
+  }, [isInstalled])
 
   const handleInstall = async () => {
-    if (!deferredPrompt) return
-
-    deferredPrompt.prompt()
-    const { outcome } = await deferredPrompt.userChoice
-
-    if (outcome === "accepted") {
-      console.log("User accepted the install prompt")
+    try {
+      await installPrompt()
+      setShowPrompt(false)
+    } catch (error) {
+      console.error("Install failed:", error)
     }
-
-    setDeferredPrompt(null)
-    setShowPrompt(false)
   }
 
   const handleDismiss = () => {
     setShowPrompt(false)
-    setDeferredPrompt(null)
+    setDismissed(true)
+    // Remember dismissal for this session
+    sessionStorage.setItem("pwa-install-dismissed", "true")
   }
 
-  if (!showPrompt || !deferredPrompt) {
+  // Check if user previously dismissed the prompt
+  useEffect(() => {
+    const wasDismissed = sessionStorage.getItem("pwa-install-dismissed")
+    if (wasDismissed) {
+      setDismissed(true)
+    }
+  }, [])
+
+  if (!showPrompt || !canInstall || isInstalled) {
     return null
   }
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-50 md:left-auto md:right-4 md:w-80">
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1">
-              <h3 className="font-semibold text-sm">Install OpenBalti</h3>
-              <p className="text-xs text-muted-foreground mt-1">
-                Install our app for a better experience with offline access
-              </p>
+    <div className="fixed bottom-4 left-4 right-4 z-50 md:left-auto md:right-4 md:w-96">
+      <Card className="shadow-lg border-2 border-primary/20 bg-background/95 backdrop-blur-sm">
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-2">
+              <Smartphone className="h-5 w-5 text-primary" />
+              <CardTitle className="text-lg">Install OpenBalti</CardTitle>
             </div>
             <Button variant="ghost" size="sm" onClick={handleDismiss} className="h-6 w-6 p-0">
               <X className="h-4 w-4" />
             </Button>
           </div>
-          <div className="flex gap-2 mt-3">
-            <Button onClick={handleInstall} size="sm" className="flex-1">
-              <Download className="h-4 w-4 mr-1" />
-              Install
+          <CardDescription>
+            Install our app for a better experience with offline access and faster loading.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="flex gap-2">
+            <Button onClick={handleInstall} className="flex-1 gap-2">
+              <Download className="h-4 w-4" />
+              Install App
             </Button>
-            <Button variant="outline" onClick={handleDismiss} size="sm">
-              Later
+            <Button variant="outline" onClick={handleDismiss}>
+              Not Now
             </Button>
           </div>
         </CardContent>
