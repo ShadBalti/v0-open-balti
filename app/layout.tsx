@@ -11,7 +11,7 @@ import { OrganizationStructuredData } from "@/components/structured-data"
 import { Toaster } from "@/components/ui/toaster"
 import { SessionProvider } from "@/components/auth/session-provider"
 import { GoogleAnalytics } from "@/components/analytics"
-import { PWAProvider } from "@/components/pwa/pwa-provider"
+import { MobilePWAProvider } from "@/components/pwa/mobile-pwa-provider"
 import { Suspense } from "react"
 
 const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-inter" })
@@ -23,14 +23,32 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "default",
     title: "OpenBalti Dictionary",
+    startupImage: "/android-chrome-512x512.png",
   },
   formatDetection: {
     telephone: false,
+    address: false,
+    email: false,
   },
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/favicon.ico", sizes: "16x16 32x32 48x48" },
+      { url: "/logo.png", sizes: "192x192", type: "image/png" },
+    ],
     shortcut: "/favicon.ico",
-    apple: "/android-chrome-512x512.png",
+    apple: [
+      { url: "/logo.png", sizes: "180x180", type: "image/png" },
+      { url: "/android-chrome-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "default",
+    "apple-mobile-web-app-title": "OpenBalti",
+    "msapplication-TileColor": "#2563eb",
+    "msapplication-config": "/browserconfig.xml",
+    "msapplication-tap-highlight": "no",
   },
     generator: 'v0.dev'
 }
@@ -44,6 +62,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: "cover",
 }
 
 export default function RootLayout({
@@ -57,16 +76,11 @@ export default function RootLayout({
         <meta name="google-site-verification" content="6qYt2H85MUvuaHNGAZKRY87nANOkZ7hRfCgPcs6EOKY" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/android-chrome-512x512.png" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="OpenBalti" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="msapplication-config" content="/browserconfig.xml" />
-        <meta name="msapplication-TileColor" content="#000000" />
+        <link rel="apple-touch-startup-image" href="/android-chrome-512x512.png" />
         <GoogleAnalytics />
       </head>
       <body className={`${inter.className} min-h-screen flex flex-col`}>
-        <PWAProvider>
+        <MobilePWAProvider>
           <SessionProvider>
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
               <SkipLink />
@@ -83,7 +97,7 @@ export default function RootLayout({
               <OrganizationStructuredData />
             </ThemeProvider>
           </SessionProvider>
-        </PWAProvider>
+        </MobilePWAProvider>
       </body>
     </html>
   )
