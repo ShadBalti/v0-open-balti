@@ -20,7 +20,19 @@ const PWAContext = createContext<PWAContextType | undefined>(undefined)
 export function usePWA() {
   const context = useContext(PWAContext)
   if (!context) {
-    throw new Error("usePWA must be used within an EnhancedPWAProvider")
+    // Return safe defaults during SSR or when provider is not available
+    return {
+      isOnline: true,
+      isInstalled: false,
+      canInstall: false,
+      isServiceWorkerReady: false,
+      deviceType: "desktop" as const,
+      installPrompt: async () => false,
+      shareContent: async () => false,
+      addToHomeScreen: () => {},
+      checkInstallability: () => {},
+      serviceWorkerVersion: null,
+    }
   }
   return context
 }
@@ -46,16 +58,20 @@ export function EnhancedPWAProvider({ children }: EnhancedPWAProviderProps) {
 
   // Device detection
   useEffect(() => {
-    if (!isClient) return
+    if (!isClient || typeof window === "undefined") return
 
     const detectDevice = () => {
-      const userAgent = navigator.userAgent.toLowerCase()
-      if (/iphone|ipad|ipod/.test(userAgent)) {
-        setDeviceType("ios")
-      } else if (/android/.test(userAgent)) {
-        setDeviceType("android")
-      } else {
-        setDeviceType("desktop")
+      try {
+        const userAgent = navigator.userAgent.toLowerCase()
+        if (/iphone|ipad|ipod/.test(userAgent)) {
+          setDeviceType("ios")
+        } else if (/android/.test(userAgent)) {
+          setDeviceType("android")
+        } else {
+          setDeviceType("desktop")
+        }
+      } catch (error) {
+        console.error("[PWA] Device detection failed:", error)
       }
     }
 
@@ -88,7 +104,7 @@ export function EnhancedPWAProvider({ children }: EnhancedPWAProviderProps) {
 
   // Service Worker registration
   useEffect(() => {
-    if (!isClient) return
+    if (!isClient || typeof window === "undefined") return
 
     const registerServiceWorker = async () => {
       if (!("serviceWorker" in navigator)) {
@@ -149,7 +165,7 @@ export function EnhancedPWAProvider({ children }: EnhancedPWAProviderProps) {
 
   // Event listeners setup
   useEffect(() => {
-    if (!isClient) return
+    if (!isClient || typeof window === "undefined") return
 
     let mounted = true
 
@@ -195,27 +211,35 @@ export function EnhancedPWAProvider({ children }: EnhancedPWAProviderProps) {
       }
     }
 
-    // Set initial online status
-    setIsOnline(navigator.onLine)
+    try {
+      // Set initial online status
+      setIsOnline(navigator.onLine)
 
-    // Check installation status
-    checkInstallationStatus()
+      // Check installation status
+      checkInstallationStatus()
 
-    // Add event listeners
-    window.addEventListener("online", handleOnline)
-    window.addEventListener("offline", handleOffline)
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt)
-    window.addEventListener("appinstalled", handleAppInstalled)
-    document.addEventListener("visibilitychange", handleVisibilityChange)
+      // Add event listeners
+      window.addEventListener("online", handleOnline)
+      window.addEventListener("offline", handleOffline)
+      window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt)
+      window.addEventListener("appinstalled", handleAppInstalled)
+      document.addEventListener("visibilitychange", handleVisibilityChange)
+    } catch (error) {
+      console.error("[PWA] Event listener setup failed:", error)
+    }
 
     // Cleanup
     return () => {
       mounted = false
-      window.removeEventListener("online", handleOnline)
-      window.removeEventListener("offline", handleOffline)
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt)
-      window.removeEventListener("appinstalled", handleAppInstalled)
-      document.removeEventListener("visibilitychange", handleVisibilityChange)
+      try {
+        window.removeEventListener("online", handleOnline)
+        window.removeEventListener("offline", handleOffline)
+        window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt)
+        window.removeEventListener("appinstalled", handleAppInstalled)
+        document.removeEventListener("visibilitychange", handleVisibilityChange)
+      } catch (error) {
+        console.error("[PWA] Event listener cleanup failed:", error)
+      }
     }
   }, [isClient, checkInstallationStatus])
 
@@ -304,7 +328,11 @@ export function EnhancedPWAProvider({ children }: EnhancedPWAProviderProps) {
       console.log("[PWA] Checking installability...")
 
       // Dispatch a custom event to potentially trigger beforeinstallprompt
-      window.dispatchEvent(new Event("beforeinstallprompt"))
+      try {
+        window.dispatchEvent(new Event("beforeinstallprompt"))
+      } catch (error) {
+        console.error("[PWA] Failed to dispatch beforeinstallprompt:", error)
+      }
     }
   }, [checkInstallationStatus, deviceType, isInstalled, canInstall])
 
@@ -312,23 +340,27 @@ export function EnhancedPWAProvider({ children }: EnhancedPWAProviderProps) {
   const showUpdateNotification = () => {
     if (typeof document === "undefined") return
 
-    const notification = document.createElement("div")
-    notification.className = "fixed top-4 left-4 right-4 z-50 bg-blue-600 text-white p-4 rounded-lg shadow-lg"
-    notification.innerHTML = `
-      <div class="flex items-center justify-between">
-        <span class="text-sm font-medium">App updated! Refresh to get the latest version.</span>
-        <button onclick="window.location.reload()" class="text-xs bg-white/20 px-3 py-1 rounded hover:bg-white/30">
-          Refresh
-        </button>
-      </div>
-    `
-    document.body.appendChild(notification)
+    try {
+      const notification = document.createElement("div")
+      notification.className = "fixed top-4 left-4 right-4 z-50 bg-blue-600 text-white p-4 rounded-lg shadow-lg"
+      notification.innerHTML = `
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-medium">App updated! Refresh to get the latest version.</span>
+          <button onclick="window.location.reload()" class="text-xs bg-white/20 px-3 py-1 rounded hover:bg-white/30">
+            Refresh
+          </button>
+        </div>
+      `
+      document.body.appendChild(notification)
 
-    setTimeout(() => {
-      if (notification.parentNode) {
-        notification.parentNode.removeChild(notification)
-      }
-    }, 10000)
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification)
+        }
+      }, 10000)
+    } catch (error) {
+      console.error("[PWA] Failed to show update notification:", error)
+    }
   }
 
   const showIOSInstructions = () => {
@@ -340,7 +372,11 @@ export function EnhancedPWAProvider({ children }: EnhancedPWAProviderProps) {
 
 The app will appear on your home screen like a native app!`
 
-    alert(message)
+    try {
+      alert(message)
+    } catch (error) {
+      console.error("[PWA] Failed to show iOS instructions:", error)
+    }
   }
 
   const showGenericInstructions = () => {
@@ -352,7 +388,11 @@ The app will appear on your home screen like a native app!`
 
 Once installed, the app will work offline and load faster!`
 
-    alert(message)
+    try {
+      alert(message)
+    } catch (error) {
+      console.error("[PWA] Failed to show generic instructions:", error)
+    }
   }
 
   const value: PWAContextType = {
@@ -368,6 +408,7 @@ Once installed, the app will work offline and load faster!`
     serviceWorkerVersion,
   }
 
+  // Always render children, but only provide context on client
   if (!isClient) {
     return <>{children}</>
   }

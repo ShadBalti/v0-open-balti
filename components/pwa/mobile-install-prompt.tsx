@@ -1,153 +1,140 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
+import { usePWA } from "./enhanced-pwa-provider"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { X, Download, Share, Smartphone, Zap } from "lucide-react"
-import { usePWA } from "./enhanced-pwa-provider"
+import { X, Download, Share } from "lucide-react"
 
 export function MobileInstallPrompt() {
-  const [showPrompt, setShowPrompt] = useState(false)
-  const [dismissed, setDismissed] = useState(false)
-  const [interactionCount, setInteractionCount] = useState(0)
   const { canInstall, isInstalled, deviceType, installPrompt, addToHomeScreen } = usePWA()
+  const [showPrompt, setShowPrompt] = useState(false)
+  const [isDismissed, setIsDismissed] = useState(false)
+  const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
-    // Don't show if already installed or dismissed permanently
-    if (isInstalled || dismissed) return
+    setIsClient(true)
+  }, [])
 
-    // Check if user has permanently dismissed
-    const permanentlyDismissed = localStorage.getItem("pwa-install-permanently-dismissed") === "true"
-    if (permanentlyDismissed) {
-      setDismissed(true)
-      return
-    }
+  useEffect(() => {
+    if (!isClient || typeof window === "undefined") return
 
-    // Track user interactions
-    let interactions = 0
-    const trackInteraction = () => {
-      interactions++
-      setInteractionCount(interactions)
-    }
-
-    // Add interaction listeners
-    document.addEventListener("click", trackInteraction)
-    document.addEventListener("scroll", trackInteraction)
-    document.addEventListener("keydown", trackInteraction)
-
-    // Show prompt based on device type and engagement
-    const showTimer = setTimeout(() => {
-      if (deviceType !== "desktop" && !isInstalled && interactions >= 2) {
-        setShowPrompt(true)
+    // Check if user has dismissed the prompt
+    try {
+      const dismissed = localStorage.getItem("pwa-install-dismissed")
+      if (dismissed) {
+        setIsDismissed(true)
+        return
       }
-    }, 5000) // Wait 5 seconds and at least 2 interactions
-
-    // Cleanup
-    return () => {
-      clearTimeout(showTimer)
-      document.removeEventListener("click", trackInteraction)
-      document.removeEventListener("scroll", trackInteraction)
-      document.removeEventListener("keydown", trackInteraction)
+    } catch (error) {
+      console.error("[PWA] Failed to check localStorage:", error)
     }
-  }, [canInstall, isInstalled, dismissed, deviceType])
+
+    // Show prompt after user engagement
+    let engagementTimer: NodeJS.Timeout
+    let hasEngaged = false
+
+    const handleEngagement = () => {
+      if (hasEngaged) return
+      hasEngaged = true
+
+      engagementTimer = setTimeout(() => {
+        if (!isInstalled && !isDismissed && (canInstall || deviceType === "ios")) {
+          setShowPrompt(true)
+        }
+      }, 5000) // Show after 5 seconds of engagement
+    }
+
+    // Listen for user engagement
+    const events = ["click", "scroll", "keydown", "touchstart"]
+    events.forEach((event) => {
+      document.addEventListener(event, handleEngagement, { once: true, passive: true })
+    })
+
+    return () => {
+      if (engagementTimer) {
+        clearTimeout(engagementTimer)
+      }
+      events.forEach((event) => {
+        document.removeEventListener(event, handleEngagement)
+      })
+    }
+  }, [isClient, canInstall, isInstalled, isDismissed, deviceType])
 
   const handleInstall = async () => {
     try {
       if (deviceType === "ios") {
         addToHomeScreen()
-      } else if (canInstall) {
+      } else {
         const success = await installPrompt()
         if (success) {
           setShowPrompt(false)
         }
-      } else {
-        addToHomeScreen()
       }
     } catch (error) {
-      console.error("Install failed:", error)
-      addToHomeScreen() // Fallback to instructions
+      console.error("[PWA] Install failed:", error)
     }
   }
 
   const handleDismiss = () => {
     setShowPrompt(false)
-    localStorage.setItem("pwa-install-dismissed", "true")
+    setIsDismissed(true)
+    try {
+      localStorage.setItem("pwa-install-dismissed", "true")
+    } catch (error) {
+      console.error("[PWA] Failed to save dismissal:", error)
+    }
   }
 
-  const handlePermanentDismiss = () => {
-    setShowPrompt(false)
-    setDismissed(true)
-    localStorage.setItem("pwa-install-permanently-dismissed", "true")
-  }
-
-  if (!showPrompt || isInstalled || deviceType === "desktop") {
+  // Don't render during SSR or if conditions aren't met
+  if (!isClient || !showPrompt || isInstalled || isDismissed) {
     return null
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-gradient-to-t from-black/20 to-transparent">
-      <Card className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-2xl border-0">
+    <div className="fixed bottom-4 left-4 right-4 z-50 md:left-auto md:right-4 md:w-96">
+      <Card className="border-2 border-blue-500 shadow-lg">
         <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0">
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                <Smartphone className="w-6 h-6" />
-              </div>
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center space-x-2">
+              <Download className="h-5 w-5 text-blue-600" />
+              <h3 className="font-semibold text-sm">Install OpenBalti</h3>
             </div>
-
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-bold text-sm">Install OpenBalti</h3>
-                <div className="flex items-center gap-1 text-xs bg-white/20 px-2 py-0.5 rounded-full">
-                  <Zap className="w-3 h-3" />
-                  <span>Fast & Offline</span>
-                </div>
-              </div>
-
-              <p className="text-xs text-primary-foreground/90 mb-3 leading-relaxed">
-                {deviceType === "ios"
-                  ? "Add to your home screen for instant access and offline reading"
-                  : "Install our app for faster loading, offline access, and a native experience"}
-              </p>
-
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleInstall}
-                  size="sm"
-                  variant="secondary"
-                  className="flex-1 gap-2 text-xs font-medium"
-                >
-                  {deviceType === "ios" ? (
-                    <>
-                      <Share className="w-3 h-3" />
-                      Add to Home Screen
-                    </>
-                  ) : (
-                    <>
-                      <Download className="w-3 h-3" />
-                      Install App
-                    </>
-                  )}
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleDismiss}
-                  className="px-3 text-primary-foreground/80 hover:text-primary-foreground hover:bg-white/10"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-
-              <button
-                onClick={handlePermanentDismiss}
-                className="text-xs text-primary-foreground/60 hover:text-primary-foreground/80 mt-2 underline"
-              >
-                Don't show again
-              </button>
-            </div>
+            <Button variant="ghost" size="sm" onClick={handleDismiss} className="h-6 w-6 p-0">
+              <X className="h-4 w-4" />
+            </Button>
           </div>
+
+          <p className="text-sm text-muted-foreground mb-4">
+            {deviceType === "ios"
+              ? "Add to your home screen for a better experience!"
+              : "Install our app for faster access and offline use!"}
+          </p>
+
+          <div className="flex space-x-2">
+            <Button onClick={handleInstall} size="sm" className="flex-1">
+              {deviceType === "ios" ? (
+                <>
+                  <Share className="h-4 w-4 mr-2" />
+                  Add to Home Screen
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  Install App
+                </>
+              )}
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleDismiss}>
+              Later
+            </Button>
+          </div>
+
+          {deviceType === "ios" && (
+            <div className="mt-3 text-xs text-muted-foreground">
+              Tap <Share className="h-3 w-3 inline mx-1" /> then "Add to Home Screen"
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

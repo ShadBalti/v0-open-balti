@@ -6,35 +6,44 @@ import { Card, CardContent } from "@/components/ui/card"
 import { CheckCircle, Smartphone } from "lucide-react"
 
 export function StandaloneDetector() {
-  const [showDetector, setShowDetector] = useState(false)
   const { isInstalled, deviceType } = usePWA()
+  const [showConfirmation, setShowConfirmation] = useState(false)
+  const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
-    // Show detector for a few seconds when app is in standalone mode
-    if (isInstalled) {
-      setShowDetector(true)
-      const timer = setTimeout(() => {
-        setShowDetector(false)
-      }, 3000)
-      return () => clearTimeout(timer)
-    }
-  }, [isInstalled])
+    setIsClient(true)
+  }, [])
 
-  if (!showDetector || !isInstalled) {
+  useEffect(() => {
+    if (!isClient || !isInstalled) return
+
+    // Show confirmation when app is detected as installed
+    setShowConfirmation(true)
+
+    // Hide after 5 seconds
+    const timer = setTimeout(() => {
+      setShowConfirmation(false)
+    }, 5000)
+
+    return () => clearTimeout(timer)
+  }, [isClient, isInstalled])
+
+  // Don't render during SSR
+  if (!isClient || !showConfirmation) {
     return null
   }
 
   return (
-    <div className="fixed top-4 left-4 right-4 z-50 md:left-auto md:right-4 md:w-80">
-      <Card className="bg-green-600 text-white border-0 shadow-lg">
-        <CardContent className="p-3">
-          <div className="flex items-center gap-3">
-            <CheckCircle className="w-5 h-5 flex-shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium">App Installed Successfully!</p>
-              <p className="text-xs text-green-100">OpenBalti is now running in standalone mode</p>
+    <div className="fixed top-4 left-4 right-4 z-50 md:left-auto md:right-4 md:w-96">
+      <Card className="border-2 border-green-500 bg-green-50 dark:bg-green-950">
+        <CardContent className="p-4">
+          <div className="flex items-center space-x-3">
+            <CheckCircle className="h-6 w-6 text-green-600" />
+            <div>
+              <h3 className="font-semibold text-sm text-green-800 dark:text-green-200">App Installed Successfully!</h3>
+              <p className="text-xs text-green-700 dark:text-green-300">OpenBalti is now running in standalone mode</p>
             </div>
-            <Smartphone className="w-5 h-5 flex-shrink-0" />
+            <Smartphone className="h-5 w-5 text-green-600" />
           </div>
         </CardContent>
       </Card>
