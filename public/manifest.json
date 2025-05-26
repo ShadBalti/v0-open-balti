@@ -11,7 +11,7 @@
   "lang": "en",
   "categories": ["education", "reference", "utilities"],
   "prefer_related_applications": false,
-  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui", "browser"],
   "edge_side_panel": {
     "preferred_width": 400
   },
@@ -19,7 +19,8 @@
     {
       "src": "/favicon.ico",
       "sizes": "16x16 32x32 48x48",
-      "type": "image/x-icon"
+      "type": "image/x-icon",
+      "purpose": "any"
     },
     {
       "src": "/logo.png",
@@ -51,7 +52,7 @@
       "name": "Search Words",
       "short_name": "Search",
       "description": "Search the Balti dictionary",
-      "url": "/?action=search",
+      "url": "/?utm_source=homescreen&utm_medium=shortcut&action=search",
       "icons": [
         {
           "src": "/logo.png",
@@ -64,7 +65,7 @@
       "name": "Add Word",
       "short_name": "Contribute",
       "description": "Add a new word to the dictionary",
-      "url": "/contribute",
+      "url": "/contribute?utm_source=homescreen&utm_medium=shortcut",
       "icons": [
         {
           "src": "/logo.png",
@@ -77,20 +78,7 @@
       "name": "Favorites",
       "short_name": "Favorites",
       "description": "View your favorite words",
-      "url": "/favorites",
-      "icons": [
-        {
-          "src": "/logo.png",
-          "sizes": "192x192",
-          "type": "image/png"
-        }
-      ]
-    },
-    {
-      "name": "Profile",
-      "short_name": "Profile",
-      "description": "View your profile and contributions",
-      "url": "/profile",
+      "url": "/favorites?utm_source=homescreen&utm_medium=shortcut",
       "icons": [
         {
           "src": "/logo.png",
@@ -107,13 +95,6 @@
       "type": "image/png",
       "form_factor": "narrow",
       "label": "OpenBalti Dictionary mobile view"
-    },
-    {
-      "src": "/android-chrome-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "OpenBalti Dictionary desktop view"
     }
   ],
   "related_applications": [],

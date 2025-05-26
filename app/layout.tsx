@@ -11,7 +11,10 @@ import { OrganizationStructuredData } from "@/components/structured-data"
 import { Toaster } from "@/components/ui/toaster"
 import { SessionProvider } from "@/components/auth/session-provider"
 import { GoogleAnalytics } from "@/components/analytics"
-import { MobilePWAProvider } from "@/components/pwa/mobile-pwa-provider"
+import { EnhancedPWAProvider } from "@/components/pwa/enhanced-pwa-provider"
+import { MobileInstallPrompt } from "@/components/pwa/mobile-install-prompt"
+import { StandaloneDetector } from "@/components/pwa/standalone-detector"
+import { OfflineIndicator } from "@/components/pwa/offline-indicator"
 import { Suspense } from "react"
 
 const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-inter" })
@@ -32,6 +35,12 @@ export const metadata: Metadata = {
     shortcut: "/favicon.ico",
     apple: "/android-chrome-512x512.png",
   },
+  other: {
+    "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "default",
+    "apple-mobile-web-app-title": "OpenBalti",
+  },
     generator: 'v0.dev'
 }
 
@@ -44,6 +53,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: "cover",
 }
 
 export default function RootLayout({
@@ -61,10 +71,11 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="OpenBalti" />
         <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="theme-color" content="#2563eb" />
         <GoogleAnalytics />
       </head>
       <body className={`${inter.className} min-h-screen flex flex-col`}>
-        <MobilePWAProvider>
+        <EnhancedPWAProvider>
           <SessionProvider>
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
               <SkipLink />
@@ -79,9 +90,12 @@ export default function RootLayout({
               </div>
               <Toaster />
               <OrganizationStructuredData />
+              <MobileInstallPrompt />
+              <StandaloneDetector />
+              <OfflineIndicator />
             </ThemeProvider>
           </SessionProvider>
-        </MobilePWAProvider>
+        </EnhancedPWAProvider>
       </body>
     </html>
   )
