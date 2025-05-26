@@ -3,70 +3,30 @@ import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
-import { SessionProvider } from "@/components/auth/session-provider"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
+import { SkipLink } from "@/components/layout/skip-link"
+import { baseMetadata } from "@/lib/metadata"
+import { OrganizationStructuredData } from "@/components/structured-data"
 import { Toaster } from "@/components/ui/toaster"
+import { SessionProvider } from "@/components/auth/session-provider"
+import { GoogleAnalytics } from "@/components/analytics"
 import { PWAProvider } from "@/components/pwa/pwa-provider"
-import { Analytics } from "@/components/analytics"
 import { Suspense } from "react"
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-inter" })
 
 export const metadata: Metadata = {
-  title: {
-    default: "OpenBalti - Balti Language Dictionary",
-    template: "%s | OpenBalti",
+  ...baseMetadata,
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "OpenBalti Dictionary",
   },
-  description:
-    "A comprehensive dictionary and learning platform for the Balti language, preserving and promoting Balti culture and heritage.",
-  keywords: ["Balti", "dictionary", "language", "Baltistan", "culture", "heritage", "learning"],
-  authors: [{ name: "OpenBalti Team" }],
-  creator: "OpenBalti",
-  publisher: "OpenBalti",
   formatDetection: {
-    email: false,
-    address: false,
     telephone: false,
   },
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://openbalti.vercel.app"),
-  alternates: {
-    canonical: "/",
-  },
-  openGraph: {
-    type: "website",
-    locale: "en_US",
-    url: "/",
-    title: "OpenBalti - Balti Language Dictionary",
-    description: "A comprehensive dictionary and learning platform for the Balti language",
-    siteName: "OpenBalti",
-    images: [
-      {
-        url: "/logo.png",
-        width: 512,
-        height: 512,
-        alt: "OpenBalti Logo",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "OpenBalti - Balti Language Dictionary",
-    description: "A comprehensive dictionary and learning platform for the Balti language",
-    images: ["/logo.png"],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-    },
-  },
-  manifest: "/manifest.json",
   icons: {
     icon: "/favicon.ico",
     shortcut: "/favicon.ico",
@@ -88,12 +48,13 @@ export const viewport: Viewport = {
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode
-}) {
+}>) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <meta name="google-site-verification" content="6qYt2H85MUvuaHNGAZKRY87nANOkZ7hRfCgPcs6EOKY" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/android-chrome-512x512.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -102,23 +63,27 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="msapplication-config" content="/browserconfig.xml" />
         <meta name="msapplication-TileColor" content="#000000" />
+        <GoogleAnalytics />
       </head>
-      <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+      <body className={`${inter.className} min-h-screen flex flex-col`}>
+        <PWAProvider>
           <SessionProvider>
-            <PWAProvider>
-              <Suspense fallback={<div>Loading...</div>}>
-                <div className="relative flex min-h-screen flex-col">
+            <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+              <SkipLink />
+              <div className="relative min-h-screen flex flex-col">
+                <Suspense fallback={<div className="h-16 border-b"></div>}>
                   <Header />
-                  <main className="flex-1">{children}</main>
-                  <Footer />
-                </div>
-              </Suspense>
+                </Suspense>
+                <main id="main-content" className="flex-1" tabIndex={-1}>
+                  {children}
+                </main>
+                <Footer />
+              </div>
               <Toaster />
-            </PWAProvider>
+              <OrganizationStructuredData />
+            </ThemeProvider>
           </SessionProvider>
-        </ThemeProvider>
-        <Analytics />
+        </PWAProvider>
       </body>
     </html>
   )
