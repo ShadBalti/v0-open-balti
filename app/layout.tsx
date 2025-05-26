@@ -12,8 +12,8 @@ import { Toaster } from "@/components/ui/toaster"
 import { SessionProvider } from "@/components/auth/session-provider"
 import { GoogleAnalytics } from "@/components/analytics"
 import { ComprehensivePWAManager } from "@/components/pwa/comprehensive-pwa-manager"
-import { MobileInstallPrompt } from "@/components/pwa/mobile-install-prompt"
-import { StandaloneDetector } from "@/components/pwa/standalone-detector"
+import { InstallPromptManager } from "@/components/pwa/install-prompt-manager"
+import { EnhancedStandaloneDetector } from "@/components/pwa/enhanced-standalone-detector"
 import { OfflineIndicator } from "@/components/pwa/offline-indicator"
 import { Suspense } from "react"
 
@@ -90,8 +90,8 @@ export default function RootLayout({
               </div>
               <Toaster />
               <OrganizationStructuredData />
-              <MobileInstallPrompt />
-              <StandaloneDetector />
+              <InstallPromptManager />
+              <EnhancedStandaloneDetector />
               <OfflineIndicator />
             </ThemeProvider>
           </SessionProvider>

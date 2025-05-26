@@ -1,18 +1,12 @@
-const CACHE_VERSION = "v3.0.0"
+const CACHE_VERSION = "v4.0.0"
 const STATIC_CACHE = `openbalti-static-${CACHE_VERSION}`
 const DYNAMIC_CACHE = `openbalti-dynamic-${CACHE_VERSION}`
 const API_CACHE = `openbalti-api-${CACHE_VERSION}`
 
-// Essential files for PWA functionality
+// Essential files for PWA functionality - these MUST be cached
 const ESSENTIAL_FILES = ["/", "/manifest.json", "/favicon.ico", "/logo.png", "/android-chrome-512x512.png"]
 
-// Additional static assets
-const STATIC_ASSETS = ["/baltistan.jpeg", "/developer.jpg"]
-
-// API routes to cache
-const API_ROUTES = ["/api/words", "/api/stats", "/api/activity"]
-
-// Install event
+// Install event - this is critical for PWA installability
 self.addEventListener("install", (event) => {
   console.log(`[SW ${CACHE_VERSION}] Installing...`)
 
@@ -21,33 +15,30 @@ self.addEventListener("install", (event) => {
       try {
         const cache = await caches.open(STATIC_CACHE)
 
-        // Cache essential files first
-        console.log("[SW] Caching essential files...")
+        // Cache essential files one by one to ensure success
+        console.log("[SW] Caching essential files for PWA installability...")
+
         for (const file of ESSENTIAL_FILES) {
           try {
-            const response = await fetch(file)
+            console.log(`[SW] Caching: ${file}`)
+            const response = await fetch(file, { cache: "no-cache" })
+
             if (response.ok) {
               await cache.put(file, response)
-              console.log(`[SW] ✓ Cached: ${file}`)
+              console.log(`[SW] ✓ Successfully cached: ${file}`)
             } else {
-              console.warn(`[SW] ✗ Failed to cache ${file}: ${response.status}`)
+              console.error(`[SW] ✗ Failed to cache ${file}: HTTP ${response.status}`)
+              // For essential files, we need to ensure they're cached
+              if (file === "/" || file === "/manifest.json") {
+                throw new Error(`Critical file ${file} failed to cache`)
+              }
             }
           } catch (error) {
-            console.warn(`[SW] ✗ Error caching ${file}:`, error)
-          }
-        }
-
-        // Cache additional assets (non-critical)
-        console.log("[SW] Caching additional assets...")
-        for (const asset of STATIC_ASSETS) {
-          try {
-            const response = await fetch(asset)
-            if (response.ok) {
-              await cache.put(asset, response)
-              console.log(`[SW] ✓ Cached: ${asset}`)
+            console.error(`[SW] ✗ Error caching ${file}:`, error)
+            // Don't fail installation for non-critical files
+            if (file === "/" || file === "/manifest.json") {
+              throw error
             }
-          } catch (error) {
-            console.warn(`[SW] Could not cache ${asset}:`, error)
           }
         }
 
@@ -55,12 +46,13 @@ self.addEventListener("install", (event) => {
         await caches.open(DYNAMIC_CACHE)
         await caches.open(API_CACHE)
 
-        console.log(`[SW ${CACHE_VERSION}] Installation complete`)
+        console.log(`[SW ${CACHE_VERSION}] Installation complete - PWA ready for install`)
 
         // Skip waiting to activate immediately
         await self.skipWaiting()
       } catch (error) {
         console.error(`[SW] Installation failed:`, error)
+        throw error // This will prevent SW from installing
       }
     })(),
   )
@@ -86,17 +78,18 @@ self.addEventListener("activate", (event) => {
 
         await Promise.all(deletePromises)
 
-        // Take control of all clients
+        // Take control of all clients immediately
         await self.clients.claim()
 
-        console.log(`[SW ${CACHE_VERSION}] Activation complete`)
+        console.log(`[SW ${CACHE_VERSION}] Activation complete - PWA fully ready`)
 
-        // Notify all clients
+        // Notify all clients that SW is ready
         const clients = await self.clients.matchAll()
         clients.forEach((client) => {
           client.postMessage({
-            type: "SW_ACTIVATED",
+            type: "SW_READY",
             version: CACHE_VERSION,
+            timestamp: Date.now(),
           })
         })
       } catch (error) {
@@ -106,7 +99,7 @@ self.addEventListener("activate", (event) => {
   )
 })
 
-// Fetch event
+// Fetch event - handle all requests
 self.addEventListener("fetch", (event) => {
   const { request } = event
   const url = new URL(request.url)
@@ -124,15 +117,17 @@ async function handleRequest(request) {
   const url = new URL(request.url)
 
   try {
-    // Handle different types of requests
+    // Handle navigation requests (pages)
     if (request.mode === "navigate") {
       return await handleNavigationRequest(request)
     }
 
+    // Handle API requests
     if (url.pathname.startsWith("/api/")) {
       return await handleApiRequest(request)
     }
 
+    // Handle static assets
     if (isStaticAsset(request)) {
       return await handleStaticAsset(request)
     }
@@ -161,7 +156,7 @@ async function handleNavigationRequest(request) {
   } catch (error) {
     console.log("[SW] Navigation request failed, trying cache...")
 
-    // Try cache
+    // Try cache first
     const cachedResponse = await caches.match(request)
     if (cachedResponse) {
       return cachedResponse
@@ -182,14 +177,39 @@ async function handleNavigationRequest(request) {
           <title>OpenBalti - Offline</title>
           <meta name="viewport" content="width=device-width, initial-scale=1">
           <style>
-            body { font-family: system-ui; text-align: center; padding: 2rem; }
-            .offline { color: #666; }
+            body { 
+              font-family: system-ui; 
+              text-align: center; 
+              padding: 2rem; 
+              background: #f8fafc;
+            }
+            .container {
+              max-width: 400px;
+              margin: 0 auto;
+              background: white;
+              padding: 2rem;
+              border-radius: 8px;
+              box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            }
+            .offline { color: #666; margin: 1rem 0; }
+            button {
+              background: #2563eb;
+              color: white;
+              border: none;
+              padding: 0.75rem 1.5rem;
+              border-radius: 6px;
+              cursor: pointer;
+              font-size: 1rem;
+            }
+            button:hover { background: #1d4ed8; }
           </style>
         </head>
         <body>
-          <h1>OpenBalti Dictionary</h1>
-          <p class="offline">You're currently offline. Please check your connection and try again.</p>
-          <button onclick="window.location.reload()">Retry</button>
+          <div class="container">
+            <h1>OpenBalti Dictionary</h1>
+            <p class="offline">You're currently offline. Please check your connection and try again.</p>
+            <button onclick="window.location.reload()">Retry</button>
+          </div>
         </body>
       </html>
     `,
@@ -202,15 +222,10 @@ async function handleNavigationRequest(request) {
 }
 
 async function handleApiRequest(request) {
-  const url = new URL(request.url)
-
-  // Check if this API should be cached
-  const shouldCache = API_ROUTES.some((route) => url.pathname.startsWith(route))
-
   try {
     const networkResponse = await fetch(request)
 
-    if (networkResponse.ok && shouldCache) {
+    if (networkResponse.ok) {
       // Cache successful API responses
       const cache = await caches.open(API_CACHE)
       await cache.put(request, networkResponse.clone())
@@ -218,12 +233,10 @@ async function handleApiRequest(request) {
 
     return networkResponse
   } catch (error) {
-    if (shouldCache) {
-      // Return cached API response if available
-      const cachedResponse = await caches.match(request)
-      if (cachedResponse) {
-        return cachedResponse
-      }
+    // Return cached API response if available
+    const cachedResponse = await caches.match(request)
+    if (cachedResponse) {
+      return cachedResponse
     }
 
     // Return error response
@@ -320,6 +333,20 @@ self.addEventListener("message", (event) => {
   if (event.data?.type === "GET_VERSION") {
     event.ports[0]?.postMessage({ version: CACHE_VERSION })
   }
+
+  if (event.data?.type === "FORCE_UPDATE") {
+    // Force update by clearing caches and reloading
+    caches
+      .keys()
+      .then((cacheNames) => {
+        return Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName)))
+      })
+      .then(() => {
+        self.clients.matchAll().then((clients) => {
+          clients.forEach((client) => client.navigate(client.url))
+        })
+      })
+  }
 })
 
-console.log(`[SW ${CACHE_VERSION}] Script loaded`)
+console.log(`[SW ${CACHE_VERSION}] Script loaded and ready`)

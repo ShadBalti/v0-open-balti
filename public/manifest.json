@@ -70,19 +70,6 @@
           "type": "image/png"
         }
       ]
-    },
-    {
-      "name": "Favorites",
-      "short_name": "Favorites",
-      "description": "View your favorite words",
-      "url": "/favorites?utm_source=homescreen&utm_medium=shortcut",
-      "icons": [
-        {
-          "src": "/logo.png",
-          "sizes": "192x192",
-          "type": "image/png"
-        }
-      ]
     }
   ],
   "screenshots": [
