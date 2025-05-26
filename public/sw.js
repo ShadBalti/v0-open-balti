@@ -1,64 +1,55 @@
-const CACHE_VERSION = "v2.0.0"
+const CACHE_VERSION = "v3.0.0"
 const STATIC_CACHE = `openbalti-static-${CACHE_VERSION}`
 const DYNAMIC_CACHE = `openbalti-dynamic-${CACHE_VERSION}`
 const API_CACHE = `openbalti-api-${CACHE_VERSION}`
 
-// Essential files that must be cached for offline functionality
-const ESSENTIAL_FILES = [
-  "/",
-  "/offline.html",
-  "/manifest.json",
-  "/favicon.ico",
-  "/logo.png",
-  "/android-chrome-512x512.png",
-]
+// Essential files for PWA functionality
+const ESSENTIAL_FILES = ["/", "/manifest.json", "/favicon.ico", "/logo.png", "/android-chrome-512x512.png"]
 
-// Additional files to cache for better performance
-const STATIC_FILES = ["/baltistan.jpeg", "/developer.jpg"]
+// Additional static assets
+const STATIC_ASSETS = ["/baltistan.jpeg", "/developer.jpg"]
 
-// API endpoints to cache
-const CACHEABLE_APIS = ["/api/words", "/api/stats", "/api/activity"]
+// API routes to cache
+const API_ROUTES = ["/api/words", "/api/stats", "/api/activity"]
 
-// Install event - cache essential files
+// Install event
 self.addEventListener("install", (event) => {
   console.log(`[SW ${CACHE_VERSION}] Installing...`)
 
   event.waitUntil(
     (async () => {
       try {
+        const cache = await caches.open(STATIC_CACHE)
+
         // Cache essential files first
-        const staticCache = await caches.open(STATIC_CACHE)
-
-        // Cache files individually to avoid failing on one bad file
-        const cachePromises = ESSENTIAL_FILES.map(async (file) => {
+        console.log("[SW] Caching essential files...")
+        for (const file of ESSENTIAL_FILES) {
           try {
             const response = await fetch(file)
             if (response.ok) {
-              await staticCache.put(file, response)
-              console.log(`[SW] Cached: ${file}`)
+              await cache.put(file, response)
+              console.log(`[SW] ✓ Cached: ${file}`)
             } else {
-              console.warn(`[SW] Failed to cache ${file}: ${response.status}`)
+              console.warn(`[SW] ✗ Failed to cache ${file}: ${response.status}`)
             }
           } catch (error) {
-            console.warn(`[SW] Error caching ${file}:`, error)
+            console.warn(`[SW] ✗ Error caching ${file}:`, error)
           }
-        })
+        }
 
-        await Promise.allSettled(cachePromises)
-
-        // Cache additional static files (non-critical)
-        const additionalPromises = STATIC_FILES.map(async (file) => {
+        // Cache additional assets (non-critical)
+        console.log("[SW] Caching additional assets...")
+        for (const asset of STATIC_ASSETS) {
           try {
-            const response = await fetch(file)
+            const response = await fetch(asset)
             if (response.ok) {
-              await staticCache.put(file, response)
+              await cache.put(asset, response)
+              console.log(`[SW] ✓ Cached: ${asset}`)
             }
           } catch (error) {
-            console.warn(`[SW] Could not cache ${file}:`, error)
+            console.warn(`[SW] Could not cache ${asset}:`, error)
           }
-        })
-
-        await Promise.allSettled(additionalPromises)
+        }
 
         // Initialize other caches
         await caches.open(DYNAMIC_CACHE)
@@ -66,7 +57,7 @@ self.addEventListener("install", (event) => {
 
         console.log(`[SW ${CACHE_VERSION}] Installation complete`)
 
-        // Force activation
+        // Skip waiting to activate immediately
         await self.skipWaiting()
       } catch (error) {
         console.error(`[SW] Installation failed:`, error)
@@ -75,7 +66,7 @@ self.addEventListener("install", (event) => {
   )
 })
 
-// Activate event - clean up old caches
+// Activate event
 self.addEventListener("activate", (event) => {
   console.log(`[SW ${CACHE_VERSION}] Activating...`)
 
@@ -100,7 +91,7 @@ self.addEventListener("activate", (event) => {
 
         console.log(`[SW ${CACHE_VERSION}] Activation complete`)
 
-        // Notify clients about the new service worker
+        // Notify all clients
         const clients = await self.clients.matchAll()
         clients.forEach((client) => {
           client.postMessage({
@@ -115,7 +106,7 @@ self.addEventListener("activate", (event) => {
   )
 })
 
-// Fetch event - handle all requests
+// Fetch event
 self.addEventListener("fetch", (event) => {
   const { request } = event
   const url = new URL(request.url)
@@ -125,9 +116,6 @@ self.addEventListener("fetch", (event) => {
 
   // Skip chrome-extension and other non-http requests
   if (!url.protocol.startsWith("http")) return
-
-  // Skip requests with no-cache header
-  if (request.headers.get("cache-control") === "no-cache") return
 
   event.respondWith(handleRequest(request))
 })
@@ -150,7 +138,7 @@ async function handleRequest(request) {
     }
 
     // Default: network first with cache fallback
-    return await networkFirstWithFallback(request)
+    return await networkFirstStrategy(request)
   } catch (error) {
     console.error("[SW] Request handling error:", error)
     return await handleOfflineResponse(request)
@@ -173,7 +161,7 @@ async function handleNavigationRequest(request) {
   } catch (error) {
     console.log("[SW] Navigation request failed, trying cache...")
 
-    // Try cache first
+    // Try cache
     const cachedResponse = await caches.match(request)
     if (cachedResponse) {
       return cachedResponse
@@ -185,9 +173,31 @@ async function handleNavigationRequest(request) {
       return rootResponse
     }
 
-    // Last resort: offline page
-    const offlineResponse = await caches.match("/offline.html")
-    return offlineResponse || new Response("Offline", { status: 503 })
+    // Return basic offline response
+    return new Response(
+      `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>OpenBalti - Offline</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style>
+            body { font-family: system-ui; text-align: center; padding: 2rem; }
+            .offline { color: #666; }
+          </style>
+        </head>
+        <body>
+          <h1>OpenBalti Dictionary</h1>
+          <p class="offline">You're currently offline. Please check your connection and try again.</p>
+          <button onclick="window.location.reload()">Retry</button>
+        </body>
+      </html>
+    `,
+      {
+        status: 503,
+        headers: { "Content-Type": "text/html" },
+      },
+    )
   }
 }
 
@@ -195,7 +205,7 @@ async function handleApiRequest(request) {
   const url = new URL(request.url)
 
   // Check if this API should be cached
-  const shouldCache = CACHEABLE_APIS.some((api) => url.pathname.startsWith(api))
+  const shouldCache = API_ROUTES.some((route) => url.pathname.startsWith(route))
 
   try {
     const networkResponse = await fetch(request)
@@ -217,10 +227,17 @@ async function handleApiRequest(request) {
     }
 
     // Return error response
-    return new Response(JSON.stringify({ error: "Network unavailable", offline: true }), {
-      status: 503,
-      headers: { "Content-Type": "application/json" },
-    })
+    return new Response(
+      JSON.stringify({
+        error: "Network unavailable",
+        offline: true,
+        message: "This feature requires an internet connection",
+      }),
+      {
+        status: 503,
+        headers: { "Content-Type": "application/json" },
+      },
+    )
   }
 }
 
@@ -247,7 +264,7 @@ async function handleStaticAsset(request) {
   }
 }
 
-async function networkFirstWithFallback(request) {
+async function networkFirstStrategy(request) {
   try {
     const networkResponse = await fetch(request)
 
@@ -268,8 +285,7 @@ async function networkFirstWithFallback(request) {
 
 async function handleOfflineResponse(request) {
   if (request.mode === "navigate") {
-    const offlinePage = await caches.match("/offline.html")
-    return offlinePage || new Response("Offline", { status: 503 })
+    return new Response("Offline", { status: 503 })
   }
 
   const cachedResponse = await caches.match(request)
@@ -303,77 +319,6 @@ self.addEventListener("message", (event) => {
 
   if (event.data?.type === "GET_VERSION") {
     event.ports[0]?.postMessage({ version: CACHE_VERSION })
-  }
-
-  if (event.data?.type === "CACHE_URLS") {
-    event.waitUntil(cacheUrls(event.data.urls))
-  }
-})
-
-async function cacheUrls(urls) {
-  try {
-    const cache = await caches.open(DYNAMIC_CACHE)
-    await Promise.allSettled(
-      urls.map(async (url) => {
-        try {
-          const response = await fetch(url)
-          if (response.ok) {
-            await cache.put(url, response)
-          }
-        } catch (error) {
-          console.warn(`[SW] Failed to cache ${url}:`, error)
-        }
-      }),
-    )
-  } catch (error) {
-    console.error("[SW] Cache URLs failed:", error)
-  }
-}
-
-// Background sync
-self.addEventListener("sync", (event) => {
-  console.log("[SW] Background sync:", event.tag)
-
-  if (event.tag === "background-sync") {
-    event.waitUntil(handleBackgroundSync())
-  }
-})
-
-async function handleBackgroundSync() {
-  try {
-    console.log("[SW] Handling background sync")
-    // Add your background sync logic here
-  } catch (error) {
-    console.error("[SW] Background sync failed:", error)
-  }
-}
-
-// Push notifications
-self.addEventListener("push", (event) => {
-  console.log("[SW] Push notification received")
-
-  const options = {
-    body: event.data ? event.data.text() : "New content available!",
-    icon: "/logo.png",
-    badge: "/logo.png",
-    vibrate: [100, 50, 100],
-    data: { dateOfArrival: Date.now(), primaryKey: 1 },
-    actions: [
-      { action: "explore", title: "Explore", icon: "/logo.png" },
-      { action: "close", title: "Close", icon: "/logo.png" },
-    ],
-  }
-
-  event.waitUntil(self.registration.showNotification("OpenBalti", options))
-})
-
-// Notification click
-self.addEventListener("notificationclick", (event) => {
-  console.log("[SW] Notification clicked")
-  event.notification.close()
-
-  if (event.action === "explore") {
-    event.waitUntil(self.clients.openWindow("/"))
   }
 })
 

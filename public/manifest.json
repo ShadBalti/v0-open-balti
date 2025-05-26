@@ -12,9 +12,6 @@
   "categories": ["education", "reference", "utilities"],
   "prefer_related_applications": false,
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui", "browser"],
-  "edge_side_panel": {
-    "preferred_width": 400
-  },
   "icons": [
     {
       "src": "/favicon.ico",
@@ -95,13 +92,6 @@
       "type": "image/png",
       "form_factor": "narrow",
       "label": "OpenBalti Dictionary mobile view"
-    }
-  ],
-  "related_applications": [],
-  "protocol_handlers": [
-    {
-      "protocol": "web+openbalti",
-      "url": "/words/%s"
     }
   ]
 }

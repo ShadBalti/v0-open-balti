@@ -11,7 +11,7 @@ import { OrganizationStructuredData } from "@/components/structured-data"
 import { Toaster } from "@/components/ui/toaster"
 import { SessionProvider } from "@/components/auth/session-provider"
 import { GoogleAnalytics } from "@/components/analytics"
-import { EnhancedPWAProvider } from "@/components/pwa/enhanced-pwa-provider"
+import { ComprehensivePWAManager } from "@/components/pwa/comprehensive-pwa-manager"
 import { MobileInstallPrompt } from "@/components/pwa/mobile-install-prompt"
 import { StandaloneDetector } from "@/components/pwa/standalone-detector"
 import { OfflineIndicator } from "@/components/pwa/offline-indicator"
@@ -75,7 +75,7 @@ export default function RootLayout({
         <GoogleAnalytics />
       </head>
       <body className={`${inter.className} min-h-screen flex flex-col`}>
-        <EnhancedPWAProvider>
+        <ComprehensivePWAManager>
           <SessionProvider>
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
               <SkipLink />
@@ -95,7 +95,7 @@ export default function RootLayout({
               <OfflineIndicator />
             </ThemeProvider>
           </SessionProvider>
-        </EnhancedPWAProvider>
+        </ComprehensivePWAManager>
       </body>
     </html>
   )

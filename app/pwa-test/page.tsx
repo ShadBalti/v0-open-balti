@@ -1,15 +1,14 @@
-import { PWATester } from "@/components/pwa/pwa-tester"
-import type { Metadata } from "next"
-
-export const metadata: Metadata = {
-  title: "PWA Testing - OpenBalti",
-  description: "Test Progressive Web App functionality",
-}
+import { PWADiagnostics } from "@/components/pwa/pwa-diagnostics"
 
 export default function PWATestPage() {
   return (
     <div className="container mx-auto py-8">
-      <PWATester />
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-4">PWA Testing & Diagnostics</h1>
+        <p className="text-muted-foreground">Use this page to test and diagnose PWA functionality on your device.</p>
+      </div>
+
+      <PWADiagnostics />
     </div>
   )
 }
