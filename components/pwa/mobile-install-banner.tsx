@@ -3,117 +3,87 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Download, X, Smartphone, Share, Plus } from "lucide-react"
-import { usePWA } from "./pwa-provider"
+import { X, Download, Share } from "lucide-react"
+import { useMobilePWA } from "./mobile-pwa-provider"
 
-interface MobileInstallBannerProps {
-  className?: string
-}
-
-export function MobileInstallBanner({ className }: MobileInstallBannerProps) {
-  const { canInstall, isInstalled, installPrompt } = usePWA()
+export function MobileInstallBanner() {
   const [showBanner, setShowBanner] = useState(false)
   const [dismissed, setDismissed] = useState(false)
-  const [isIOS, setIsIOS] = useState(false)
-  const [isAndroid, setIsAndroid] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
+  const { canInstall, isInstalled, deviceType, addToHomeScreen } = useMobilePWA()
 
   useEffect(() => {
-    // Detect device type
-    const userAgent = navigator.userAgent.toLowerCase()
-    const isIOSDevice = /iphone|ipad|ipod/.test(userAgent)
-    const isAndroidDevice = /android/.test(userAgent)
-    const isMobileDevice = /mobi|android|iphone|ipad|ipod/.test(userAgent)
+    // Don't show if already installed or dismissed
+    if (isInstalled || dismissed) return
 
-    setIsIOS(isIOSDevice)
-    setIsAndroid(isAndroidDevice)
-    setIsMobile(isMobileDevice)
-
-    // Check if banner was previously dismissed
-    const wasDismissed = localStorage.getItem("mobile-install-banner-dismissed")
-    if (wasDismissed) {
+    // Check if user has dismissed the banner before
+    const hasBeenDismissed = localStorage.getItem("pwa-install-banner-dismissed") === "true"
+    if (hasBeenDismissed) {
       setDismissed(true)
       return
     }
 
-    // Show banner after 2 seconds on mobile if not installed
-    if (isMobileDevice && !isInstalled) {
-      const timer = setTimeout(() => {
+    // Show banner after 3 seconds on mobile devices
+    const timer = setTimeout(() => {
+      if (deviceType !== "desktop" && !isInstalled) {
         setShowBanner(true)
-      }, 2000)
-      return () => clearTimeout(timer)
-    }
-  }, [isInstalled])
-
-  const handleInstall = async () => {
-    if (canInstall && installPrompt) {
-      try {
-        await installPrompt()
-        setShowBanner(false)
-      } catch (error) {
-        console.error("Install failed:", error)
       }
-    }
-  }
+    }, 3000)
+
+    return () => clearTimeout(timer)
+  }, [canInstall, isInstalled, dismissed, deviceType])
 
   const handleDismiss = () => {
     setShowBanner(false)
     setDismissed(true)
-    localStorage.setItem("mobile-install-banner-dismissed", "true")
+    localStorage.setItem("pwa-install-banner-dismissed", "true")
   }
 
-  const handleIOSInstall = () => {
+  const handleInstall = () => {
+    addToHomeScreen()
     setShowBanner(false)
-    // Show iOS install instructions
-    alert(
-      "To install OpenBalti:\n\n1. Tap the Share button (⬆️) at the bottom of Safari\n2. Scroll down and tap 'Add to Home Screen'\n3. Tap 'Add' to confirm",
-    )
   }
 
-  if (!isMobile || isInstalled || dismissed || !showBanner) {
+  if (!showBanner || isInstalled) {
     return null
   }
 
   return (
-    <div className={`fixed bottom-0 left-0 right-0 z-50 p-4 ${className}`}>
-      <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20 shadow-lg">
+    <div className="fixed bottom-4 left-4 right-4 z-50 md:hidden">
+      <Card className="shadow-lg border-2 border-primary/20">
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0">
-              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                <Smartphone className="w-6 h-6 text-primary" />
-              </div>
+              {deviceType === "ios" ? (
+                <Share className="h-6 w-6 text-primary" />
+              ) : (
+                <Download className="h-6 w-6 text-primary" />
+              )}
             </div>
-
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-sm mb-1">Install OpenBalti App</h3>
-              <p className="text-xs text-muted-foreground mb-3">
-                Get the full experience with offline access, faster loading, and native app features.
+              <h3 className="text-sm font-semibold text-foreground">Install OpenBalti</h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                {deviceType === "ios"
+                  ? "Add to your home screen for a better experience"
+                  : "Install our app for offline access and faster loading"}
               </p>
-
-              <div className="flex gap-2">
-                {isIOS ? (
-                  <Button onClick={handleIOSInstall} size="sm" className="flex-1 gap-2 text-xs">
-                    <Share className="w-3 h-3" />
-                    Add to Home Screen
-                  </Button>
-                ) : canInstall ? (
-                  <Button onClick={handleInstall} size="sm" className="flex-1 gap-2 text-xs">
-                    <Download className="w-3 h-3" />
-                    Install App
-                  </Button>
-                ) : (
-                  <Button onClick={handleIOSInstall} size="sm" className="flex-1 gap-2 text-xs">
-                    <Plus className="w-3 h-3" />
-                    Add to Home Screen
-                  </Button>
-                )}
-
-                <Button variant="ghost" size="sm" onClick={handleDismiss} className="px-2">
-                  <X className="w-4 h-4" />
+              <div className="flex gap-2 mt-3">
+                <Button size="sm" onClick={handleInstall} className="text-xs">
+                  {deviceType === "ios" ? "Show Instructions" : "Install"}
+                </Button>
+                <Button size="sm" variant="outline" onClick={handleDismiss} className="text-xs">
+                  Not Now
                 </Button>
               </div>
             </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={handleDismiss}
+              className="flex-shrink-0 h-6 w-6 p-0"
+              aria-label="Dismiss"
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </div>
         </CardContent>
       </Card>

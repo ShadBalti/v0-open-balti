@@ -23,32 +23,14 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "default",
     title: "OpenBalti Dictionary",
-    startupImage: "/android-chrome-512x512.png",
   },
   formatDetection: {
     telephone: false,
-    address: false,
-    email: false,
   },
   icons: {
-    icon: [
-      { url: "/favicon.ico", sizes: "16x16 32x32 48x48" },
-      { url: "/logo.png", sizes: "192x192", type: "image/png" },
-    ],
+    icon: "/favicon.ico",
     shortcut: "/favicon.ico",
-    apple: [
-      { url: "/logo.png", sizes: "180x180", type: "image/png" },
-      { url: "/android-chrome-512x512.png", sizes: "512x512", type: "image/png" },
-    ],
-  },
-  other: {
-    "mobile-web-app-capable": "yes",
-    "apple-mobile-web-app-capable": "yes",
-    "apple-mobile-web-app-status-bar-style": "default",
-    "apple-mobile-web-app-title": "OpenBalti",
-    "msapplication-TileColor": "#2563eb",
-    "msapplication-config": "/browserconfig.xml",
-    "msapplication-tap-highlight": "no",
+    apple: "/android-chrome-512x512.png",
   },
     generator: 'v0.dev'
 }
@@ -62,7 +44,6 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  viewportFit: "cover",
 }
 
 export default function RootLayout({
@@ -76,7 +57,10 @@ export default function RootLayout({
         <meta name="google-site-verification" content="6qYt2H85MUvuaHNGAZKRY87nANOkZ7hRfCgPcs6EOKY" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/android-chrome-512x512.png" />
-        <link rel="apple-touch-startup-image" href="/android-chrome-512x512.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="OpenBalti" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <GoogleAnalytics />
       </head>
       <body className={`${inter.className} min-h-screen flex flex-col`}>

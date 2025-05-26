@@ -1,8 +1,6 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
-import { MobileInstallBanner } from "./mobile-install-banner"
-import { OfflineIndicator } from "./offline-indicator"
 
 interface MobilePWAContextType {
   isOnline: boolean
@@ -43,32 +41,41 @@ export function MobilePWAProvider({ children }: MobilePWAProviderProps) {
   }, [])
 
   useEffect(() => {
-    if (!isClient) return
+    if (!isClient || typeof window === "undefined") return
+
+    let mounted = true
 
     const initializeMobilePWA = async () => {
-      // Detect device type
-      detectDeviceType()
+      try {
+        // Detect device type
+        detectDeviceType()
 
-      // Check installation status
-      checkInstallationStatus()
+        // Check installation status
+        checkInstallationStatus()
 
-      // Set initial online status
-      setIsOnline(navigator.onLine)
+        // Set initial online status
+        if (typeof navigator !== "undefined") {
+          setIsOnline(navigator.onLine)
+        }
 
-      // Register service worker with mobile optimizations
-      await registerMobileServiceWorker()
+        // Register service worker with mobile optimizations
+        await registerMobileServiceWorker()
 
-      // Setup mobile-specific event listeners
-      setupMobileEventListeners()
+        // Setup mobile-specific event listeners
+        const cleanup = setupMobileEventListeners()
 
-      // Setup viewport meta tag for mobile
-      setupMobileViewport()
+        // Setup mobile features
+        setupMobileFeatures()
 
-      // Setup mobile-specific features
-      setupMobileFeatures()
+        return cleanup
+      } catch (error) {
+        console.error("[Mobile PWA] Initialization error:", error)
+      }
     }
 
     const detectDeviceType = () => {
+      if (typeof navigator === "undefined") return
+
       const userAgent = navigator.userAgent.toLowerCase()
       if (/iphone|ipad|ipod/.test(userAgent)) {
         setDeviceType("ios")
@@ -82,17 +89,23 @@ export function MobilePWAProvider({ children }: MobilePWAProviderProps) {
     const checkInstallationStatus = () => {
       if (typeof window === "undefined") return
 
-      // Check for standalone mode (installed PWA)
-      const isStandalone = window.matchMedia("(display-mode: standalone)").matches
-      const isInWebAppiOS = (window.navigator as any).standalone === true
-      const isInstalled = isStandalone || isInWebAppiOS
+      try {
+        // Check for standalone mode (installed PWA)
+        const isStandalone = window.matchMedia("(display-mode: standalone)").matches
+        const isInWebAppiOS = (window.navigator as any).standalone === true
+        const isInstalled = isStandalone || isInWebAppiOS
 
-      console.log("[Mobile PWA] Installation status:", { isStandalone, isInWebAppiOS, isInstalled })
-      setIsInstalled(isInstalled)
+        console.log("[Mobile PWA] Installation status:", { isStandalone, isInWebAppiOS, isInstalled })
+        if (mounted) {
+          setIsInstalled(isInstalled)
+        }
+      } catch (error) {
+        console.error("[Mobile PWA] Installation check error:", error)
+      }
     }
 
     const registerMobileServiceWorker = async () => {
-      if (!("serviceWorker" in navigator)) {
+      if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) {
         console.warn("[Mobile PWA] Service workers not supported")
         return
       }
@@ -105,7 +118,9 @@ export function MobilePWAProvider({ children }: MobilePWAProviderProps) {
         })
 
         console.log("[Mobile PWA] Service worker registered:", registration)
-        setIsServiceWorkerReady(true)
+        if (mounted) {
+          setIsServiceWorkerReady(true)
+        }
 
         // Handle updates with mobile-friendly notifications
         registration.addEventListener("updatefound", () => {
@@ -125,30 +140,36 @@ export function MobilePWAProvider({ children }: MobilePWAProviderProps) {
     }
 
     const setupMobileEventListeners = () => {
+      if (typeof window === "undefined") return () => {}
+
       // Online/offline detection
       const handleOnline = () => {
         console.log("[Mobile PWA] Online")
-        setIsOnline(true)
+        if (mounted) setIsOnline(true)
       }
 
       const handleOffline = () => {
         console.log("[Mobile PWA] Offline")
-        setIsOnline(false)
+        if (mounted) setIsOnline(false)
       }
 
       // Install prompt handling (Android)
       const handleBeforeInstallPrompt = (e: Event) => {
         console.log("[Mobile PWA] Install prompt available")
         e.preventDefault()
-        setDeferredPrompt(e)
-        setCanInstall(true)
+        if (mounted) {
+          setDeferredPrompt(e)
+          setCanInstall(true)
+        }
       }
 
       const handleAppInstalled = () => {
         console.log("[Mobile PWA] App installed")
-        setIsInstalled(true)
-        setCanInstall(false)
-        setDeferredPrompt(null)
+        if (mounted) {
+          setIsInstalled(true)
+          setCanInstall(false)
+          setDeferredPrompt(null)
+        }
       }
 
       // Mobile-specific events
@@ -161,122 +182,80 @@ export function MobilePWAProvider({ children }: MobilePWAProviderProps) {
         }
       }
 
-      // Touch events for better mobile interaction
-      const handleTouchStart = () => {
-        // Prevent zoom on double tap for better app-like experience
-        document.addEventListener("touchend", handleTouchEnd, { passive: true })
-      }
-
-      const handleTouchEnd = () => {
-        document.removeEventListener("touchend", handleTouchEnd)
-      }
-
       // Add event listeners
       window.addEventListener("online", handleOnline)
       window.addEventListener("offline", handleOffline)
       window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt)
       window.addEventListener("appinstalled", handleAppInstalled)
       document.addEventListener("visibilitychange", handleVisibilityChange)
-      document.addEventListener("touchstart", handleTouchStart, { passive: true })
 
       // Cleanup function
       return () => {
+        if (typeof window === "undefined") return
         window.removeEventListener("online", handleOnline)
         window.removeEventListener("offline", handleOffline)
         window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt)
         window.removeEventListener("appinstalled", handleAppInstalled)
         document.removeEventListener("visibilitychange", handleVisibilityChange)
-        document.removeEventListener("touchstart", handleTouchStart)
       }
-    }
-
-    const setupMobileViewport = () => {
-      // Ensure proper viewport meta tag for mobile
-      let viewportMeta = document.querySelector('meta[name="viewport"]')
-      if (!viewportMeta) {
-        viewportMeta = document.createElement("meta")
-        viewportMeta.setAttribute("name", "viewport")
-        document.head.appendChild(viewportMeta)
-      }
-
-      viewportMeta.setAttribute(
-        "content",
-        "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover",
-      )
-
-      // Add mobile-specific meta tags
-      const mobileMetaTags = [
-        { name: "mobile-web-app-capable", content: "yes" },
-        { name: "apple-mobile-web-app-capable", content: "yes" },
-        { name: "apple-mobile-web-app-status-bar-style", content: "default" },
-        { name: "apple-mobile-web-app-title", content: "OpenBalti" },
-        { name: "format-detection", content: "telephone=no" },
-        { name: "msapplication-tap-highlight", content: "no" },
-      ]
-
-      mobileMetaTags.forEach(({ name, content }) => {
-        let meta = document.querySelector(`meta[name="${name}"]`)
-        if (!meta) {
-          meta = document.createElement("meta")
-          meta.setAttribute("name", name)
-          document.head.appendChild(meta)
-        }
-        meta.setAttribute("content", content)
-      })
     }
 
     const setupMobileFeatures = () => {
-      // Disable pull-to-refresh on mobile
-      document.body.style.overscrollBehavior = "none"
+      if (typeof document === "undefined") return
 
-      // Prevent zoom on input focus (iOS)
-      const inputs = document.querySelectorAll("input, textarea, select")
-      inputs.forEach((input) => {
-        input.addEventListener("focus", () => {
-          if (deviceType === "ios") {
-            const viewport = document.querySelector('meta[name="viewport"]')
-            if (viewport) {
-              viewport.setAttribute("content", "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no")
-            }
-          }
-        })
-
-        input.addEventListener("blur", () => {
-          if (deviceType === "ios") {
-            const viewport = document.querySelector('meta[name="viewport"]')
-            if (viewport) {
-              viewport.setAttribute("content", "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no")
-            }
-          }
-        })
-      })
+      try {
+        // Disable pull-to-refresh on mobile
+        if (document.body) {
+          document.body.style.overscrollBehavior = "none"
+        }
+      } catch (error) {
+        console.error("[Mobile PWA] Mobile features setup error:", error)
+      }
     }
 
     const showMobileUpdateNotification = () => {
-      // Create a mobile-friendly update notification
-      const notification = document.createElement("div")
-      notification.className =
-        "fixed top-4 left-4 right-4 z-50 bg-primary text-primary-foreground p-4 rounded-lg shadow-lg"
-      notification.innerHTML = `
-        <div class="flex items-center justify-between">
-          <span class="text-sm font-medium">New version available!</span>
-          <button onclick="window.location.reload()" class="text-xs bg-white/20 px-2 py-1 rounded">
-            Update
-          </button>
-        </div>
-      `
-      document.body.appendChild(notification)
+      if (typeof document === "undefined") return
 
-      // Remove notification after 5 seconds
-      setTimeout(() => {
-        if (notification.parentNode) {
-          notification.parentNode.removeChild(notification)
-        }
-      }, 5000)
+      try {
+        // Create a mobile-friendly update notification
+        const notification = document.createElement("div")
+        notification.className = "fixed top-4 left-4 right-4 z-50 bg-blue-600 text-white p-4 rounded-lg shadow-lg"
+        notification.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-medium">New version available!</span>
+            <button onclick="window.location.reload()" class="text-xs bg-white/20 px-2 py-1 rounded">
+              Update
+            </button>
+          </div>
+        `
+        document.body.appendChild(notification)
+
+        // Remove notification after 5 seconds
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.parentNode.removeChild(notification)
+          }
+        }, 5000)
+      } catch (error) {
+        console.error("[Mobile PWA] Update notification error:", error)
+      }
     }
 
-    initializeMobilePWA()
-  }, [isClient, deviceType])
+    const cleanup = initializeMobilePWA()
+
+    return () => {
+      mounted = false
+      if (cleanup instanceof Promise) {
+        cleanup.then((cleanupFn) => {
+          if (typeof cleanupFn === "function") {
+            cleanupFn()
+          }
+        })
+      } else if (typeof cleanup === "function") {
+        cleanup()
+      }
+    }
+  }, [isClient])
 
   const installPrompt = async () => {
     if (!deferredPrompt) {
@@ -302,21 +281,27 @@ export function MobilePWAProvider({ children }: MobilePWAProviderProps) {
   }
 
   const shareContent = async (data: ShareData) => {
-    if (navigator.share) {
-      try {
+    if (typeof navigator === "undefined") return
+
+    try {
+      if (navigator.share) {
         await navigator.share(data)
         console.log("[Mobile PWA] Content shared successfully")
-      } catch (error) {
-        console.error("[Mobile PWA] Share failed:", error)
-        // Fallback to clipboard
+      } else {
+        // Fallback for browsers without Web Share API
         if (data.url && navigator.clipboard) {
           await navigator.clipboard.writeText(data.url)
         }
       }
-    } else {
-      // Fallback for browsers without Web Share API
+    } catch (error) {
+      console.error("[Mobile PWA] Share failed:", error)
+      // Fallback to clipboard
       if (data.url && navigator.clipboard) {
-        await navigator.clipboard.writeText(data.url)
+        try {
+          await navigator.clipboard.writeText(data.url)
+        } catch (clipboardError) {
+          console.error("[Mobile PWA] Clipboard fallback failed:", clipboardError)
+        }
       }
     }
   }
@@ -347,11 +332,5 @@ export function MobilePWAProvider({ children }: MobilePWAProviderProps) {
     return <>{children}</>
   }
 
-  return (
-    <MobilePWAContext.Provider value={value}>
-      {children}
-      <MobileInstallBanner />
-      <OfflineIndicator />
-    </MobilePWAContext.Provider>
-  )
+  return <MobilePWAContext.Provider value={value}>{children}</MobilePWAContext.Provider>
 }
