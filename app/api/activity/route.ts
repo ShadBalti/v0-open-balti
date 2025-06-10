@@ -14,6 +14,13 @@ export async function GET(req: NextRequest) {
     }
 
     console.log("🔄 API: Connecting to MongoDB for fetching activity logs...")
+
+    // Check if MongoDB URI is defined
+    if (!process.env.MONGODB_URI) {
+      console.error("❌ MONGODB_URI environment variable is not defined")
+      return NextResponse.json({ success: false, error: "Database configuration error" }, { status: 500 })
+    }
+
     await dbConnect()
     console.log("✅ API: MongoDB connected for fetching activity logs")
 

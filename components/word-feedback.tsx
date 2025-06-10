@@ -20,7 +20,7 @@ interface FeedbackStats {
 
 type FeedbackType = "useful" | "trusted" | "needsReview"
 
-export default function WordFeedback({ wordId }: WordFeedbackProps) {
+export function WordFeedback({ wordId }: WordFeedbackProps) {
   const { data: session } = useSession()
   const { toast } = useToast()
   const [stats, setStats] = useState<FeedbackStats>({ useful: 0, trusted: 0, needsReview: 0 })
@@ -274,3 +274,5 @@ export default function WordFeedback({ wordId }: WordFeedbackProps) {
     </Card>
   )
 }
+
+export default WordFeedback
