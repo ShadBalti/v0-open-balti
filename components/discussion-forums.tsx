@@ -14,6 +14,7 @@ import { useSession } from "next-auth/react"
 import { useToast } from "@/hooks/use-toast"
 import { formatDistanceToNow } from "date-fns"
 import type { IForumPost } from "@/models/ForumPost"
+import Link from "next/link"
 
 const categories = [
   { value: "general", label: "General Discussion", icon: MessageSquare },
@@ -363,7 +364,9 @@ export function DiscussionForums() {
                           <div className="flex items-center gap-2">
                             {post.isPinned && <Pin className="h-4 w-4 text-primary" />}
                             {post.isLocked && <Lock className="h-4 w-4 text-muted-foreground" />}
-                            <h3 className="font-semibold text-lg hover:text-primary cursor-pointer">{post.title}</h3>
+                            <Link href={`/forum/${post._id}`} className="hover:text-primary">
+                              <h3 className="font-semibold text-lg cursor-pointer">{post.title}</h3>
+                            </Link>
                           </div>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <CategoryIcon className="h-4 w-4" />
@@ -412,9 +415,11 @@ export function DiscussionForums() {
                             <span>{post.likes?.length || 0}</span>
                           </button>
                         </div>
-                        <Button variant="outline" size="sm">
-                          View Discussion
-                        </Button>
+                        <Link href={`/forum/${post._id}`}>
+                          <Button variant="outline" size="sm">
+                            View Discussion
+                          </Button>
+                        </Link>
                       </div>
                     </div>
                   </div>

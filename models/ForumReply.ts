@@ -10,6 +10,8 @@ export interface IForumReply extends Document {
   editedAt?: Date
   createdAt: Date
   updatedAt: Date
+  level: number
+  replyPath: string
 }
 
 const ForumReplySchema = new Schema(
@@ -46,11 +48,20 @@ const ForumReplySchema = new Schema(
     editedAt: {
       type: Date,
     },
+    level: {
+      type: Number,
+      default: 0,
+      max: 5, // Limit nesting to 5 levels
+    },
+    replyPath: {
+      type: String,
+      default: "",
+    },
   },
   { timestamps: true },
 )
 
-ForumReplySchema.index({ postId: 1, createdAt: 1 })
+ForumReplySchema.index({ postId: 1, replyPath: 1, createdAt: 1 })
 ForumReplySchema.index({ author: 1 })
 
 export default mongoose.models.ForumReply || mongoose.model<IForumReply>("ForumReply", ForumReplySchema)
