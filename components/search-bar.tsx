@@ -226,3 +226,6 @@ export default function SearchBar({
     </div>
   )
 }
+
+// Add named export for compatibility
+export { SearchBar }
