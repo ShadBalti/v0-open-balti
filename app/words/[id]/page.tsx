@@ -20,11 +20,29 @@ async function getWord(id: string): Promise<IWord | null> {
     }
 
     // Convert MongoDB ObjectId to string for serialization
+    // Handle date fields safely
     return {
       ...word,
       _id: word._id.toString(),
-      createdAt: word.createdAt?.toISOString() || new Date().toISOString(),
-      updatedAt: word.updatedAt?.toISOString() || new Date().toISOString(),
+      createdAt:
+        word.createdAt instanceof Date
+          ? word.createdAt.toISOString()
+          : typeof word.createdAt === "string"
+            ? word.createdAt
+            : new Date().toISOString(),
+      updatedAt:
+        word.updatedAt instanceof Date
+          ? word.updatedAt.toISOString()
+          : typeof word.updatedAt === "string"
+            ? word.updatedAt
+            : new Date().toISOString(),
+      createdBy: word.createdBy
+        ? {
+            _id: word.createdBy._id?.toString() || word.createdBy.toString(),
+            ...(typeof word.createdBy !== "string" ? word.createdBy : {}),
+          }
+        : undefined,
+      updatedBy: word.updatedBy ? word.updatedBy.toString() : undefined,
     } as IWord
   } catch (error) {
     console.error("Error fetching word:", error)
@@ -127,7 +145,7 @@ export default async function WordPage({ params }: WordPageProps) {
           </nav>
         </div>
 
-        <WordDetail word={word} />
+        <WordDetail wordId={word._id} />
       </div>
     </>
   )
