@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
 import { Bookmark, BookmarkCheck, History, Lightbulb, GraduationCap } from "lucide-react"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
@@ -11,6 +12,8 @@ import { toast } from "react-toastify"
 import type { IWord } from "@/models/Word"
 import WordFeedback from "@/components/word-feedback"
 import WordComments from "@/components/word-comments"
+import { WordEtymology } from "@/components/word-etymology"
+import { WordShare } from "@/components/word-share"
 
 interface WordDetailProps {
   word: IWord
@@ -91,100 +94,107 @@ export function WordDetail({ word, onClose }: WordDetailProps) {
   }
 
   return (
-    <Card className="w-full">
-      <CardHeader className="flex flex-row items-start justify-between space-y-0">
-        <div>
-          <CardTitle className="text-2xl font-bold">{word.balti}</CardTitle>
-          {word.phonetic && <p className="text-sm text-muted-foreground mt-1">/{word.phonetic}/</p>}
-        </div>
-        <div className="flex gap-2">
-          {session && (
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={toggleFavorite}
-              disabled={isLoading}
-              aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-            >
-              {isFavorite ? <BookmarkCheck className="h-4 w-4 text-primary" /> : <Bookmark className="h-4 w-4" />}
+    <div className="space-y-6">
+      <Card className="w-full">
+        <CardHeader className="flex flex-row items-start justify-between space-y-0">
+          <div>
+            <CardTitle className="text-2xl font-bold">{word.balti}</CardTitle>
+            {word.phonetic && <p className="text-sm text-muted-foreground mt-1">/{word.phonetic}/</p>}
+          </div>
+          <div className="flex gap-2">
+            <WordShare word={word} />
+            {session && (
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={toggleFavorite}
+                disabled={isLoading}
+                aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+              >
+                {isFavorite ? <BookmarkCheck className="h-4 w-4 text-primary" /> : <Bookmark className="h-4 w-4" />}
+              </Button>
+            )}
+            <Button variant="ghost" size="icon" asChild aria-label="View word history">
+              <Link href={`/words/${word._id}/history`}>
+                <History className="h-4 w-4" />
+              </Link>
             </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <h3 className="font-medium">English Translation</h3>
+            <p className="text-lg">{word.english}</p>
+          </div>
+
+          {word.difficultyLevel && (
+            <div className="flex items-center gap-2">
+              <GraduationCap className="h-4 w-4 text-muted-foreground" />
+              <Badge variant="outline">
+                {word.difficultyLevel.charAt(0).toUpperCase() + word.difficultyLevel.slice(1)} Level
+              </Badge>
+            </div>
           )}
-          <Button variant="ghost" size="icon" asChild aria-label="View word history">
-            <Link href={`/words/${word._id}/history`}>
-              <History className="h-4 w-4" />
-            </Link>
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div>
-          <h3 className="font-medium">English Translation</h3>
-          <p className="text-lg">{word.english}</p>
-        </div>
 
-        {word.difficultyLevel && (
-          <div className="flex items-center gap-2">
-            <GraduationCap className="h-4 w-4 text-muted-foreground" />
-            <Badge variant="outline">
-              {word.difficultyLevel.charAt(0).toUpperCase() + word.difficultyLevel.slice(1)} Level
-            </Badge>
-          </div>
-        )}
-
-        {word.categories && word.categories.length > 0 && (
-          <div>
-            <h3 className="font-medium mb-2">Categories</h3>
-            <div className="flex flex-wrap gap-2">
-              {word.categories.map((category, index) => (
-                <Badge key={index} variant="secondary">
-                  {category}
-                </Badge>
-              ))}
+          {word.categories && word.categories.length > 0 && (
+            <div>
+              <h3 className="font-medium mb-2">Categories</h3>
+              <div className="flex flex-wrap gap-2">
+                {word.categories.map((category, index) => (
+                  <Badge key={index} variant="secondary">
+                    {category}
+                  </Badge>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {word.dialect && (
-          <div>
-            <h3 className="font-medium mb-1">Regional Dialect</h3>
-            <p>{word.dialect}</p>
-          </div>
-        )}
-
-        {word.usageNotes && (
-          <div className="p-3 bg-muted rounded-md">
-            <div className="flex items-center gap-2 mb-2">
-              <Lightbulb className="h-4 w-4 text-amber-500" />
-              <h3 className="font-medium">Usage Notes</h3>
+          {word.dialect && (
+            <div>
+              <h3 className="font-medium mb-1">Regional Dialect</h3>
+              <p>{word.dialect}</p>
             </div>
-            <p className="text-muted-foreground">{word.usageNotes}</p>
-          </div>
-        )}
+          )}
 
-        {word.relatedWords && word.relatedWords.length > 0 && (
-          <div>
-            <h3 className="font-medium mb-2">Related Words</h3>
-            <div className="flex flex-wrap gap-2">
-              {word.relatedWords.map((relatedWord, index) => (
-                <Badge key={index} variant="outline">
-                  {relatedWord}
-                </Badge>
-              ))}
+          {word.usageNotes && (
+            <div className="p-3 bg-muted rounded-md">
+              <div className="flex items-center gap-2 mb-2">
+                <Lightbulb className="h-4 w-4 text-amber-500" />
+                <h3 className="font-medium">Usage Notes</h3>
+              </div>
+              <p className="text-muted-foreground">{word.usageNotes}</p>
             </div>
-          </div>
-        )}
-        {word._id && (
-          <div className="mt-6">
+          )}
+
+          {word.relatedWords && word.relatedWords.length > 0 && (
+            <div>
+              <h3 className="font-medium mb-2">Related Words</h3>
+              <div className="flex flex-wrap gap-2">
+                {word.relatedWords.map((relatedWord, index) => (
+                  <Badge key={index} variant="outline">
+                    {relatedWord}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Etymology Section */}
+      <WordEtymology wordId={word._id} wordBalti={word.balti} />
+
+      {/* Feedback and Comments */}
+      {word._id && (
+        <>
+          <Separator />
+          <div className="grid gap-6 md:grid-cols-2">
             <WordFeedback wordId={word._id} />
-          </div>
-        )}
-        {word._id && (
-          <div className="mt-4">
             <WordComments wordId={word._id} />
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </>
+      )}
+    </div>
   )
 }
 
