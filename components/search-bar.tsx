@@ -1,231 +1,169 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useRef, useCallback } from "react"
+
+import { useState, useEffect, useRef } from "react"
+import { Search, X, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Search, X, Clock, TrendingUp } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { Card, CardContent } from "@/components/ui/card"
+import { useRouter } from "next/navigation"
+import { useDebounce } from "@/hooks/use-debounce"
 
-interface SearchBarProps {
-  searchTerm: string
-  setSearchTerm: (term: string) => void
-  placeholder?: string
-  className?: string
-}
-
-interface SearchSuggestion {
-  id: string
-  text: string
+interface SearchResult {
+  _id: string
   balti: string
   english: string
-  type: "recent" | "popular" | "suggestion"
+  pronunciation?: string
 }
 
-export default function SearchBar({
-  searchTerm,
-  setSearchTerm,
-  placeholder = "Search words...",
-  className,
+interface SearchBarProps {
+  className?: string
+  placeholder?: string
+  showResults?: boolean
+}
+
+export function SearchBar({
+  className = "",
+  placeholder = "Search words in Balti or English...",
+  showResults = true,
 }: SearchBarProps) {
-  const [inputValue, setInputValue] = useState(searchTerm)
-  const [debouncedValue, setDebouncedValue] = useState(searchTerm)
-  const [showSuggestions, setShowSuggestions] = useState(false)
-  const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([])
+  const [query, setQuery] = useState("")
+  const [results, setResults] = useState<SearchResult[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
-  const suggestionsRef = useRef<HTMLDivElement>(null)
+  const [showDropdown, setShowDropdown] = useState(false)
+  const router = useRouter()
+  const searchRef = useRef<HTMLDivElement>(null)
+  const debouncedQuery = useDebounce(query, 300)
 
-  // Update input value when searchTerm prop changes
   useEffect(() => {
-    setInputValue(searchTerm)
-  }, [searchTerm])
-
-  // Debounce input value
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedValue(inputValue)
-    }, 300)
-
-    return () => {
-      clearTimeout(timer)
+    if (debouncedQuery && debouncedQuery.length >= 2 && showResults) {
+      searchWords(debouncedQuery)
+    } else {
+      setResults([])
+      setShowDropdown(false)
     }
-  }, [inputValue])
+  }, [debouncedQuery, showResults])
 
-  // Update search term when debounced value changes
   useEffect(() => {
-    setSearchTerm(debouncedValue)
-  }, [debouncedValue, setSearchTerm])
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowDropdown(false)
+      }
+    }
 
-  // Fetch suggestions from API
-  const fetchSuggestions = useCallback(async (query: string) => {
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
+  const searchWords = async (searchQuery: string) => {
     try {
       setIsLoading(true)
-      const response = await fetch(`/api/words/suggestions?q=${encodeURIComponent(query)}&limit=8`)
+      const response = await fetch(`/api/words?search=${encodeURIComponent(searchQuery)}&limit=5`)
+      const data = await response.json()
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch suggestions")
-      }
-
-      const result = await response.json()
-
-      if (result.success) {
-        setSuggestions(result.data)
-      } else {
-        setSuggestions([])
+      if (data.success) {
+        setResults(data.words)
+        setShowDropdown(true)
       }
     } catch (error) {
-      console.error("Failed to fetch suggestions:", error)
-      setSuggestions([])
+      console.error("Search error:", error)
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }
 
-  // Handle input focus
-  const handleFocus = () => {
-    setShowSuggestions(true)
-    // Load initial suggestions (popular and recent)
-    if (suggestions.length === 0) {
-      fetchSuggestions("")
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (query.trim()) {
+      router.push(`/words?search=${encodeURIComponent(query.trim())}`)
+      setShowDropdown(false)
     }
   }
 
-  // Handle input blur
-  const handleBlur = (e: React.FocusEvent) => {
-    // Delay hiding suggestions to allow clicking on them
-    setTimeout(() => {
-      if (!suggestionsRef.current?.contains(document.activeElement)) {
-        setShowSuggestions(false)
-      }
-    }, 150)
-  }
-
-  // Handle input change
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    setInputValue(value)
-
-    // Fetch suggestions based on input
-    fetchSuggestions(value)
-  }
-
-  // Handle suggestion click
-  const handleSuggestionClick = (suggestion: SearchSuggestion) => {
-    setInputValue(suggestion.balti)
-    setSearchTerm(suggestion.balti)
-    setShowSuggestions(false)
-    inputRef.current?.blur()
-  }
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    setSearchTerm(inputValue)
-    setShowSuggestions(false)
-    inputRef.current?.blur()
+  const handleResultClick = (wordId: string) => {
+    router.push(`/words/${wordId}`)
+    setShowDropdown(false)
+    setQuery("")
   }
 
   const clearSearch = () => {
-    setInputValue("")
-    setSearchTerm("")
-    setShowSuggestions(false)
-    inputRef.current?.focus()
-  }
-
-  // Handle keyboard navigation
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Escape") {
-      setShowSuggestions(false)
-      inputRef.current?.blur()
-    }
+    setQuery("")
+    setResults([])
+    setShowDropdown(false)
   }
 
   return (
-    <div className={cn("relative w-full max-w-2xl", className)}>
-      <form onSubmit={handleSearch} className="relative">
-        <div className="relative group">
-          <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
+    <div ref={searchRef} className={`relative w-full max-w-2xl ${className}`}>
+      <form onSubmit={handleSubmit} className="relative">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            ref={inputRef}
             type="text"
             placeholder={placeholder}
-            value={inputValue}
-            onChange={handleInputChange}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-            onKeyDown={handleKeyDown}
-            className="h-12 pl-12 pr-12 text-base border-2 transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="pl-10 pr-20 h-12 text-base"
+            onFocus={() => {
+              if (results.length > 0) {
+                setShowDropdown(true)
+              }
+            }}
           />
-          {inputValue && (
-            <Button
-              type="button"
-              onClick={clearSearch}
-              variant="ghost"
-              size="icon"
-              className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 text-muted-foreground hover:text-foreground"
-              aria-label="Clear search"
-            >
-              <X className="h-4 w-4" />
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+            {isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+            {query && (
+              <Button type="button" variant="ghost" size="sm" onClick={clearSearch} className="h-8 w-8 p-0">
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+            <Button type="submit" size="sm" className="h-8">
+              Search
             </Button>
-          )}
+          </div>
         </div>
       </form>
 
-      {/* Search Suggestions */}
-      {showSuggestions && (
-        <Card
-          ref={suggestionsRef}
-          className="absolute top-full left-0 right-0 mt-2 p-2 z-50 max-h-80 overflow-y-auto shadow-lg border-2"
-        >
-          {isLoading ? (
-            <div className="flex items-center justify-center py-4">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                <span className="text-sm">Searching...</span>
-              </div>
-            </div>
-          ) : suggestions.length > 0 ? (
-            <div className="space-y-1">
-              {suggestions.map((suggestion) => (
-                <Button
-                  key={suggestion.id}
-                  variant="ghost"
-                  className="w-full justify-start h-auto py-3 px-3 text-left hover:bg-accent/50"
-                  onClick={() => handleSuggestionClick(suggestion)}
+      {showDropdown && results.length > 0 && (
+        <Card className="absolute top-full left-0 right-0 mt-1 z-50 shadow-lg">
+          <CardContent className="p-0">
+            <div className="max-h-80 overflow-y-auto">
+              {results.map((result) => (
+                <button
+                  key={result._id}
+                  onClick={() => handleResultClick(result._id)}
+                  className="w-full text-left p-3 hover:bg-muted transition-colors border-b last:border-b-0"
                 >
-                  <div className="flex items-center gap-3 w-full">
-                    {suggestion.type === "recent" && <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />}
-                    {suggestion.type === "popular" && (
-                      <TrendingUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    )}
-                    {suggestion.type === "suggestion" && (
-                      <Search className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    )}
-                    <div className="flex-1 text-left">
-                      <div className="font-medium">{suggestion.balti}</div>
-                      <div className="text-sm text-muted-foreground">{suggestion.english}</div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">{result.balti}</div>
+                      <div className="text-sm text-muted-foreground">{result.english}</div>
                     </div>
-                    <span className="text-xs text-muted-foreground capitalize">{suggestion.type}</span>
+                    {result.pronunciation && (
+                      <div className="text-xs text-muted-foreground italic">/{result.pronunciation}/</div>
+                    )}
                   </div>
-                </Button>
+                </button>
               ))}
             </div>
-          ) : inputValue ? (
-            <div className="py-4 text-center text-muted-foreground">
-              <p className="text-sm">No suggestions found</p>
-              <p className="text-xs mt-1">Try a different search term</p>
-            </div>
-          ) : (
-            <div className="py-4 text-center text-muted-foreground">
-              <p className="text-sm">Start typing to see suggestions</p>
-            </div>
-          )}
+            {results.length === 5 && (
+              <div className="p-3 border-t bg-muted/50">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => router.push(`/words?search=${encodeURIComponent(query)}`)}
+                  className="w-full"
+                >
+                  View all results for "{query}"
+                </Button>
+              </div>
+            )}
+          </CardContent>
         </Card>
       )}
     </div>
   )
 }
 
-// Add named export for compatibility
-export { SearchBar }
+// Also export as default for backward compatibility
+export default SearchBar
