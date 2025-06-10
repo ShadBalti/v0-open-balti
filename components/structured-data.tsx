@@ -68,3 +68,73 @@ export function OrganizationStructuredData() {
     />
   )
 }
+
+interface WordStructuredDataProps {
+  word: {
+    id: string
+    balti: string
+    english: string
+    urdu?: string
+    pronunciation?: string
+    partOfSpeech?: string
+    difficulty?: string
+    dialect?: string
+    examples?: Array<{
+      balti: string
+      english: string
+    }>
+  }
+  url: string
+}
+
+export function WordStructuredData({ word, url }: WordStructuredDataProps) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://openbalti.vercel.app"
+
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "DefinedTerm",
+    name: word.balti,
+    description: word.english,
+    url: url,
+    inDefinedTermSet: {
+      "@type": "DefinedTermSet",
+      name: "OpenBalti Dictionary",
+      url: baseUrl,
+    },
+    ...(word.pronunciation && {
+      pronunciation: word.pronunciation,
+    }),
+    ...(word.partOfSpeech && {
+      partOfSpeech: word.partOfSpeech,
+    }),
+    ...(word.examples &&
+      word.examples.length > 0 && {
+        example: word.examples.map((ex) => ({
+          "@type": "Example",
+          text: ex.balti,
+          description: ex.english,
+        })),
+      }),
+  }
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify(structuredData),
+      }}
+    />
+  )
+}
+
+// Generic StructuredData component for backward compatibility
+export function StructuredData({ data }: { data: any }) {
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify(data),
+      }}
+    />
+  )
+}
