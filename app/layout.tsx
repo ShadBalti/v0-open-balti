@@ -5,20 +5,23 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
-import { SessionProvider } from "@/components/auth/session-provider"
-import { Toaster } from "@/components/ui/toaster"
 import { SkipLink } from "@/components/layout/skip-link"
+import { baseMetadata } from "@/lib/metadata"
+import {
+  OrganizationStructuredData,
+  WebsiteStructuredData,
+  SoftwareApplicationStructuredData,
+  LanguageStructuredData,
+  LearningResourceStructuredData,
+} from "@/components/structured-data"
+import { Toaster } from "@/components/ui/toaster"
+import { SessionProvider } from "@/components/auth/session-provider"
 import { GoogleAnalytics } from "@/components/analytics"
-import { OrganizationStructuredData } from "@/components/structured-data"
 import { Suspense } from "react"
 
 const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-inter" })
 
-export const metadata: Metadata = {
-  title: "OpenBalti - Balti Language Dictionary",
-  description: "A community-driven dictionary for the Balti language of northern Pakistan",
-    generator: 'v0.dev'
-}
+export const metadata: Metadata = baseMetadata
 
 export default function RootLayout({
   children,
@@ -46,6 +49,10 @@ export default function RootLayout({
             </div>
             <Toaster />
             <OrganizationStructuredData />
+            <WebsiteStructuredData />
+            <SoftwareApplicationStructuredData />
+            <LanguageStructuredData />
+            <LearningResourceStructuredData />
           </ThemeProvider>
         </SessionProvider>
       </body>

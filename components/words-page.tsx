@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
-import { Loader2, RotateCw, ArrowLeftRight, Filter, Plus, X, Sparkles, BookOpen } from "lucide-react"
+import { Loader2, RotateCw, ArrowLeftRight, Filter, Plus, X } from "lucide-react"
 import WordList from "@/components/word-list"
 import WordForm from "@/components/word-form"
 import SearchBar from "@/components/search-bar"
@@ -37,10 +37,7 @@ import {
   SheetClose,
 } from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { OnboardingTour } from "@/components/ui/onboarding-tour"
-import { QuickStats } from "@/components/ui/quick-stats"
-import { WordOfTheDay } from "@/components/ui/word-of-the-day"
+import { Card } from "@/components/ui/card"
 
 export default function WordsPage() {
   const { data: session } = useSession()
@@ -63,32 +60,6 @@ export default function WordsPage() {
   const [showFiltersSheet, setShowFiltersSheet] = useState(false)
   const [activeFiltersCount, setActiveFiltersCount] = useState(0)
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl/Cmd + K for search focus
-      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
-        e.preventDefault()
-        const searchInput = document.querySelector('input[type="text"]') as HTMLInputElement
-        searchInput?.focus()
-      }
-
-      // Ctrl/Cmd + N for new word (if logged in)
-      if ((e.ctrlKey || e.metaKey) && e.key === "n" && session) {
-        e.preventDefault()
-        setActiveTab("add")
-      }
-
-      // Escape to clear search
-      if (e.key === "Escape" && searchTerm) {
-        setSearchTerm("")
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown)
-    return () => document.removeEventListener("keydown", handleKeyDown)
-  }, [session, searchTerm, setSearchTerm])
-
   // Initialize state from URL parameters
   useEffect(() => {
     const search = searchParams.get("search") || ""
@@ -96,17 +67,12 @@ export default function WordsPage() {
     const dialect = searchParams.get("dialect")
     const difficulty = searchParams.get("difficulty")
     const feedback = searchParams.get("feedback")
-    const tab = searchParams.get("tab")
 
     setSearchTerm(search)
     setSelectedCategory(category)
     setSelectedDialect(dialect)
     setSelectedDifficulty(difficulty)
     setSelectedFeedback(feedback)
-
-    if (tab === "add" && session) {
-      setActiveTab("add")
-    }
 
     fetchWords(search, category, dialect, difficulty, feedback)
 
@@ -117,7 +83,7 @@ export default function WordsPage() {
     if (difficulty) count++
     if (feedback) count++
     setActiveFiltersCount(count)
-  }, [searchParams, session])
+  }, [searchParams])
 
   const fetchWords = async (
     search = searchTerm,
@@ -167,7 +133,6 @@ export default function WordsPage() {
     dialect = selectedDialect,
     difficulty = selectedDifficulty,
     feedback = selectedFeedback,
-    tab = activeTab,
   ) => {
     const params = new URLSearchParams()
     if (search) params.append("search", search)
@@ -175,7 +140,6 @@ export default function WordsPage() {
     if (dialect) params.append("dialect", dialect)
     if (difficulty) params.append("difficulty", difficulty)
     if (feedback) params.append("feedback", feedback)
-    if (tab !== "browse") params.append("tab", tab)
 
     const queryString = params.toString()
     router.push(queryString ? `/?${queryString}` : "/")
@@ -216,18 +180,6 @@ export default function WordsPage() {
     setShowFiltersSheet(false)
   }
 
-  const handleTabChange = (tab: string) => {
-    setActiveTab(tab as "browse" | "add")
-    updateUrl(
-      searchTerm,
-      selectedCategory,
-      selectedDialect,
-      selectedDifficulty,
-      selectedFeedback,
-      tab as "browse" | "add",
-    )
-  }
-
   const handleAddWord = async (wordData: any) => {
     try {
       const response = await fetch("/api/words", {
@@ -243,7 +195,7 @@ export default function WordsPage() {
       if (result.success) {
         toast({
           title: "Success",
-          description: "Word added successfully! 🎉",
+          description: "Word added successfully",
         })
         setActiveTab("browse")
         fetchWords() // Refresh the word list
@@ -294,7 +246,7 @@ export default function WordsPage() {
       if (result.success) {
         toast({
           title: "Success",
-          description: "Word updated successfully! ✨",
+          description: "Word updated successfully",
         })
         setActiveTab("browse")
         setEditingWord(null)
@@ -370,36 +322,22 @@ export default function WordsPage() {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Hero Section */}
-      <div className="text-center space-y-4 py-8">
-        <div className="flex items-center justify-center gap-2 mb-4">
-          <BookOpen className="h-8 w-8 text-primary" />
-          <h1 className="text-4xl font-bold tracking-tight">Balti Dictionary</h1>
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row justify-between gap-4 items-start md:items-center">
+        <h1 className="text-2xl font-bold tracking-tight sr-only">Balti Dictionary</h1>
+        <div className="flex-1 w-full md:w-auto">
+          <SearchBar
+            searchTerm={searchTerm}
+            setSearchTerm={handleSearchChange}
+            placeholder="Search the dictionary..."
+            aria-label="Search for words"
+          />
         </div>
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          Discover the beauty of the Balti language. Search, learn, and contribute to preserving this ancient Tibetic
-          dialect.
-        </p>
-      </div>
 
-      {/* Quick Stats */}
-      <QuickStats />
-
-      {/* Search Section */}
-      <div className="flex flex-col items-center space-y-6">
-        <SearchBar
-          searchTerm={searchTerm}
-          setSearchTerm={handleSearchChange}
-          placeholder="Search for Balti or English words... (Ctrl+K)"
-          className="w-full max-w-2xl"
-        />
-
-        {/* Quick Actions */}
-        <div className="flex flex-wrap gap-3 items-center justify-center">
+        <div className="flex flex-wrap gap-2 w-full md:w-auto">
           <Sheet open={showFiltersSheet} onOpenChange={setShowFiltersSheet}>
             <SheetTrigger asChild>
-              <Button variant="outline" className="flex gap-2" id="filters-button">
+              <Button variant="outline" className="flex gap-2">
                 <Filter className="h-4 w-4" />
                 <span>Filters</span>
                 {activeFiltersCount > 0 && (
@@ -419,11 +357,13 @@ export default function WordsPage() {
 
               <div className="py-4 space-y-6">
                 <DialectBrowser selectedDialect={selectedDialect} onDialectChange={handleDialectChange} inline />
+
                 <DifficultyBrowser
                   selectedDifficulty={selectedDifficulty}
                   onDifficultyChange={handleDifficultyChange}
                   inline
                 />
+
                 <FeedbackFilter selectedFeedback={selectedFeedback} onFeedbackChange={handleFeedbackChange} inline />
               </div>
 
@@ -443,241 +383,165 @@ export default function WordsPage() {
           <Button
             onClick={toggleDirection}
             variant="outline"
-            className="flex gap-2"
+            size="icon"
             aria-label={`Toggle direction to ${direction === "balti-to-english" ? "English to Balti" : "Balti to English"}`}
           >
             <ArrowLeftRight className="h-4 w-4" />
-            <span className="hidden sm:inline">
-              {direction === "balti-to-english" ? "Balti → English" : "English → Balti"}
-            </span>
           </Button>
 
-          <Button onClick={() => fetchWords()} variant="outline" className="flex gap-2">
+          <Button onClick={() => fetchWords()} variant="outline" size="icon" aria-label="Refresh word list">
             <RotateCw className="h-4 w-4" />
-            <span className="hidden sm:inline">Refresh</span>
           </Button>
 
           {session && (
-            <Button onClick={() => setActiveTab("add")} className="flex gap-2" id="add-word-button">
+            <Button onClick={() => setActiveTab("add")} variant="default" className="gap-1">
               <Plus className="h-4 w-4" />
-              <span>Add Word</span>
+              <span className="hidden sm:inline">Add Word</span>
             </Button>
           )}
         </div>
       </div>
 
-      {/* Active Filters */}
       {activeFiltersCount > 0 && (
-        <Card className="p-4">
-          <div className="flex flex-wrap gap-2 items-center">
-            <span className="text-sm font-medium">Active filters:</span>
-            {selectedCategory && (
-              <Badge variant="outline" className="flex items-center gap-1">
-                Category: {selectedCategory}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-4 w-4 p-0 hover:bg-transparent"
-                  onClick={() => handleCategoryChange(null)}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </Badge>
-            )}
-            {selectedDialect && (
-              <Badge variant="outline" className="flex items-center gap-1">
-                Dialect: {selectedDialect}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-4 w-4 p-0 hover:bg-transparent"
-                  onClick={() => handleDialectChange(null)}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </Badge>
-            )}
-            {selectedDifficulty && (
-              <Badge variant="outline" className="flex items-center gap-1">
-                Difficulty: {selectedDifficulty}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-4 w-4 p-0 hover:bg-transparent"
-                  onClick={() => handleDifficultyChange(null)}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </Badge>
-            )}
-            {selectedFeedback && (
-              <Badge variant="outline" className="flex items-center gap-1">
-                Feedback: {selectedFeedback}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-4 w-4 p-0 hover:bg-transparent"
-                  onClick={() => handleFeedbackChange(null)}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </Badge>
-            )}
-            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={clearAllFilters}>
-              Clear all
-            </Button>
-          </div>
-        </Card>
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-sm text-muted-foreground">Active filters:</span>
+          {selectedCategory && (
+            <Badge variant="outline" className="flex items-center gap-1">
+              Category: {selectedCategory}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-4 w-4 p-0 hover:bg-transparent"
+                onClick={() => handleCategoryChange(null)}
+                aria-label={`Remove category filter: ${selectedCategory}`}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </Badge>
+          )}
+          {selectedDialect && (
+            <Badge variant="outline" className="flex items-center gap-1">
+              Dialect: {selectedDialect}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-4 w-4 p-0 hover:bg-transparent"
+                onClick={() => handleDialectChange(null)}
+                aria-label={`Remove dialect filter: ${selectedDialect}`}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </Badge>
+          )}
+          {selectedDifficulty && (
+            <Badge variant="outline" className="flex items-center gap-1">
+              Difficulty: {selectedDifficulty}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-4 w-4 p-0 hover:bg-transparent"
+                onClick={() => handleDifficultyChange(null)}
+                aria-label={`Remove difficulty filter: ${selectedDifficulty}`}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </Badge>
+          )}
+          {selectedFeedback && (
+            <Badge variant="outline" className="flex items-center gap-1">
+              Feedback: {selectedFeedback}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-4 w-4 p-0 hover:bg-transparent"
+                onClick={() => handleFeedbackChange(null)}
+                aria-label={`Remove feedback filter: ${selectedFeedback}`}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </Badge>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            onClick={clearAllFilters}
+            aria-label="Clear all filters"
+          >
+            Clear all
+          </Button>
+        </div>
       )}
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* Main content area */}
-        <div className="lg:col-span-3">
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-8">
-              <TabsTrigger value="browse" className="flex items-center gap-2">
-                <BookOpen className="h-4 w-4" />
-                Browse Dictionary
-              </TabsTrigger>
-              {session ? (
-                <TabsTrigger value="add" className="flex items-center gap-2">
-                  {editingWord ? (
-                    <>
-                      <Sparkles className="h-4 w-4" />
-                      Edit Word
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="h-4 w-4" />
-                      Add New Word
-                    </>
-                  )}
-                </TabsTrigger>
-              ) : (
-                <TabsTrigger value="add" disabled>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add New Word (Login Required)
-                </TabsTrigger>
-              )}
-            </TabsList>
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "browse" | "add")} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsTrigger value="browse">Browse Dictionary</TabsTrigger>
+          {session ? (
+            <TabsTrigger value="add">{editingWord ? "Edit Word" : "Add New Word"}</TabsTrigger>
+          ) : (
+            <TabsTrigger value="add" disabled>
+              Add New Word (Login Required)
+            </TabsTrigger>
+          )}
+        </TabsList>
 
-            <TabsContent value="browse" className="focus:outline-none">
-              {isLoading ? (
-                <div className="flex justify-center items-center py-16">
-                  <div className="flex flex-col items-center space-y-4">
-                    <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                    <div className="text-center">
-                      <p className="text-lg font-medium">Loading dictionary...</p>
-                      <p className="text-sm text-muted-foreground">Fetching the latest words</p>
-                    </div>
-                  </div>
-                </div>
-              ) : words.length > 0 ? (
-                <WordList
-                  words={words}
-                  direction={direction}
-                  onEdit={handleEditWord}
-                  onDelete={confirmDelete}
-                  showActions={!!session}
-                />
-              ) : (
-                <Card className="p-12 text-center">
-                  <div className="flex flex-col items-center justify-center gap-6">
-                    <div className="text-6xl opacity-20">🔍</div>
-                    <div className="space-y-2">
-                      <h3 className="text-xl font-semibold">No words found</h3>
-                      <p className="text-muted-foreground max-w-md">
-                        {searchTerm || activeFiltersCount > 0
-                          ? "Try adjusting your search terms or filters to find what you're looking for."
-                          : "The dictionary is empty. Be the first to add a word!"}
-                      </p>
-                    </div>
-                    <div className="flex gap-3">
-                      {searchTerm || activeFiltersCount > 0 ? (
-                        <Button variant="outline" onClick={clearAllFilters}>
-                          Clear all filters
-                        </Button>
-                      ) : session ? (
-                        <Button onClick={() => setActiveTab("add")}>
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add your first word
-                        </Button>
-                      ) : (
-                        <Button asChild>
-                          <Link href="/auth/signin">Sign in to add words</Link>
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </Card>
-              )}
-            </TabsContent>
-
-            <TabsContent value="add" className="focus:outline-none">
-              {session ? (
-                <WordForm
-                  initialData={editingWord}
-                  onSubmit={editingWord ? handleUpdateWord : handleAddWord}
-                  onCancel={() => {
-                    setEditingWord(null)
-                    setActiveTab("browse")
-                  }}
-                />
-              ) : (
-                <Card className="p-12 text-center">
-                  <div className="flex flex-col items-center justify-center gap-6">
-                    <div className="text-6xl opacity-20">🔐</div>
-                    <div className="space-y-2">
-                      <h3 className="text-xl font-semibold">Authentication Required</h3>
-                      <p className="text-muted-foreground max-w-md">
-                        You need to be logged in to add or edit words in the dictionary.
-                      </p>
-                    </div>
-                    <Button asChild size="lg">
-                      <Link href="/auth/signin?callbackUrl=/">Sign In to Continue</Link>
-                    </Button>
-                  </div>
-                </Card>
-              )}
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        {/* Sidebar */}
-        <div className="lg:col-span-1 space-y-6">
-          <WordOfTheDay />
-
-          {/* Quick tips card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">💡 Quick Tips</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <div className="flex items-start gap-2">
-                <Badge variant="outline" className="text-xs mt-0.5">
-                  Ctrl+K
-                </Badge>
-                <span>Quick search</span>
+        <TabsContent value="browse" className="focus:outline-none">
+          {isLoading ? (
+            <div className="flex justify-center items-center py-16">
+              <div className="flex flex-col items-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" aria-hidden="true" />
+                <p className="text-muted-foreground">Loading dictionary...</p>
               </div>
-              <div className="flex items-start gap-2">
-                <Badge variant="outline" className="text-xs mt-0.5">
-                  Ctrl+N
-                </Badge>
-                <span>Add new word</span>
+            </div>
+          ) : words.length > 0 ? (
+            <WordList
+              words={words}
+              direction={direction}
+              onEdit={handleEditWord}
+              onDelete={confirmDelete}
+              showActions={!!session}
+            />
+          ) : (
+            <Card className="p-8 text-center">
+              <div className="flex flex-col items-center justify-center gap-4">
+                <p className="text-muted-foreground">No words found</p>
+                {searchTerm || activeFiltersCount > 0 ? (
+                  <Button variant="outline" onClick={clearAllFilters}>
+                    Clear all filters
+                  </Button>
+                ) : session ? (
+                  <Button onClick={() => setActiveTab("add")}>Add your first word</Button>
+                ) : (
+                  <Button asChild>
+                    <Link href="/auth/signin">Sign in to add words</Link>
+                  </Button>
+                )}
               </div>
-              <div className="flex items-start gap-2">
-                <Badge variant="outline" className="text-xs mt-0.5">
-                  ESC
-                </Badge>
-                <span>Clear search</span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+            </Card>
+          )}
+        </TabsContent>
 
-      {/* Delete Confirmation Dialog */}
+        <TabsContent value="add" className="focus:outline-none">
+          {session ? (
+            <WordForm
+              initialData={editingWord}
+              onSubmit={editingWord ? handleUpdateWord : handleAddWord}
+              onCancel={() => {
+                setEditingWord(null)
+                setActiveTab("browse")
+              }}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center p-8 border rounded-md">
+              <p className="mb-4 text-muted-foreground">You need to be logged in to add or edit words</p>
+              <Button asChild>
+                <Link href="/auth/signin?callbackUrl=/">Sign In</Link>
+              </Button>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -698,9 +562,6 @@ export default function WordsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Onboarding Tour */}
-      <OnboardingTour />
     </div>
   )
 }
