@@ -3,6 +3,7 @@ import dbConnect from "@/lib/mongodb"
 import ActivityLog from "@/models/ActivityLog"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+import { logger } from "@/lib/logger"
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,16 +14,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Authentication required" }, { status: 401 })
     }
 
-    console.log("🔄 API: Connecting to MongoDB for fetching activity logs...")
-
-    // Check if MongoDB URI is defined
-    if (!process.env.MONGODB_URI) {
-      console.error("❌ MONGODB_URI environment variable is not defined")
-      return NextResponse.json({ success: false, error: "Database configuration error" }, { status: 500 })
-    }
-
+    logger.info("Connecting to MongoDB for fetching activity logs", { userId: session.user.id })
     await dbConnect()
-    console.log("✅ API: MongoDB connected for fetching activity logs")
+    logger.info("MongoDB connected for fetching activity logs")
 
     // Get query parameters
     const searchParams = req.nextUrl.searchParams
@@ -34,13 +28,19 @@ export async function GET(req: NextRequest) {
 
     // Build query
     const query: any = {}
-    if (userId) query.user = userId
     if (wordId) query.wordId = wordId
     if (action) query.action = action
 
-    // Only admins can see all logs, regular users can only see their own
-    if (session.user.role !== "admin") {
+    if (userId) {
+      // If a specific userId is requested, show that user's activity
+      query.user = userId
+    } else {
+      // If no userId specified, only show current user's activity (not global activity)
       query.user = session.user.id
+    }
+
+    if (session.user.role === "admin" && userId === "all") {
+      delete query.user
     }
 
     // Calculate pagination
@@ -57,7 +57,12 @@ export async function GET(req: NextRequest) {
     // Get total count for pagination
     const totalCount = await ActivityLog.countDocuments(query)
 
-    console.log(`📋 API: Successfully fetched ${logs.length} activity logs`)
+    logger.info("Successfully fetched activity logs", {
+      count: logs.length,
+      totalCount,
+      page,
+      userId: session.user.id,
+    })
 
     return NextResponse.json({
       success: true,
@@ -70,7 +75,10 @@ export async function GET(req: NextRequest) {
       },
     })
   } catch (error) {
-    console.error("❌ API Error fetching activity logs:", error)
+    logger.error("Failed to fetch activity logs", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    })
     return NextResponse.json({ success: false, error: "Failed to fetch activity logs" }, { status: 500 })
   }
 }

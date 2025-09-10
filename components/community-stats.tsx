@@ -10,7 +10,7 @@ interface CommunityStatsProps {
   className?: string
 }
 
-interface CommunityStatsData {
+interface CommunityStats {
   totalWords: number
   totalUsers: number
   totalFeedback: number
@@ -32,9 +32,9 @@ interface CommunityStatsData {
   }>
 }
 
-export function CommunityStats({ className }: CommunityStatsProps) {
+export default function CommunityStats({ className }: CommunityStatsProps) {
   const { toast } = useToast()
-  const [stats, setStats] = useState<CommunityStatsData | null>(null)
+  const [stats, setStats] = useState<CommunityStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -205,6 +205,3 @@ export function CommunityStats({ className }: CommunityStatsProps) {
     </Card>
   )
 }
-
-// Also export as default for backward compatibility
-export default CommunityStats

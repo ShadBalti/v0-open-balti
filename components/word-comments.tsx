@@ -27,7 +27,7 @@ interface Comment {
   }
 }
 
-export function WordComments({ wordId }: WordCommentsProps) {
+export default function WordComments({ wordId }: WordCommentsProps) {
   const { data: session } = useSession()
   const { toast } = useToast()
   const [comments, setComments] = useState<Comment[]>([])
@@ -201,5 +201,3 @@ export function WordComments({ wordId }: WordCommentsProps) {
     </Card>
   )
 }
-
-export default WordComments

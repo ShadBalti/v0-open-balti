@@ -62,7 +62,11 @@ export default function ActivityLogList({ userId, wordId, limit = 10 }: Activity
       params.append("page", page.toString())
       params.append("limit", limit.toString())
 
-      if (userId) params.append("userId", userId)
+      if (userId) {
+        params.append("userId", userId)
+      }
+      // If no userId provided, the API will default to current user's activity
+
       if (wordId) params.append("wordId", wordId)
       if (actionFilter !== "all") params.append("action", actionFilter)
 
@@ -127,7 +131,9 @@ export default function ActivityLogList({ userId, wordId, limit = 10 }: Activity
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between gap-4">
-        <h2 className="text-2xl font-bold">Activity Log</h2>
+        <h2 className="text-2xl font-bold">
+          {userId && userId !== session?.user?.id ? "User Activity" : "Your Activity"}
+        </h2>
         <div className="flex gap-2">
           <Select value={actionFilter} onValueChange={setActionFilter}>
             <SelectTrigger className="w-[160px]">
