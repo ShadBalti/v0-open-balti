@@ -1,54 +1,50 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useCallback, memo } from "react"
+
+import { useState, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { Search, X } from "lucide-react"
-import { useDebounce } from "@/hooks/use-debounce"
 
 interface SearchBarProps {
   searchTerm: string
   setSearchTerm: (term: string) => void
-  placeholder?: string
-  debounceDelay?: number
 }
 
-function SearchBar({
-  searchTerm,
-  setSearchTerm,
-  placeholder = "Search words...",
-  debounceDelay = 300,
-}: SearchBarProps) {
+export default function SearchBar({ searchTerm, setSearchTerm }: SearchBarProps) {
   const [inputValue, setInputValue] = useState(searchTerm)
-
-  const debouncedValue = useDebounce(inputValue, debounceDelay)
+  const [debouncedValue, setDebouncedValue] = useState(searchTerm)
 
   // Update input value when searchTerm prop changes
   useEffect(() => {
     setInputValue(searchTerm)
   }, [searchTerm])
 
+  // Debounce input value
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValue(inputValue)
+    }, 300)
+
+    return () => {
+      clearTimeout(timer)
+    }
+  }, [inputValue])
+
   // Update search term when debounced value changes
   useEffect(() => {
     setSearchTerm(debouncedValue)
   }, [debouncedValue, setSearchTerm])
 
-  const handleSearch = useCallback(
-    (e: React.FormEvent) => {
-      e.preventDefault()
-      setSearchTerm(inputValue)
-    },
-    [inputValue, setSearchTerm],
-  )
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    setSearchTerm(inputValue)
+  }
 
-  const clearSearch = useCallback(() => {
+  const clearSearch = () => {
     setInputValue("")
     setSearchTerm("")
-  }, [setSearchTerm])
-
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputValue(e.target.value)
-  }, [])
+  }
 
   return (
     <form onSubmit={handleSearch} className="relative w-full max-w-md">
@@ -56,9 +52,9 @@ function SearchBar({
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           type="text"
-          placeholder={placeholder}
+          placeholder="Search words..."
           value={inputValue}
-          onChange={handleInputChange}
+          onChange={(e) => setInputValue(e.target.value)}
           className="pl-10 pr-10"
         />
         {inputValue && (
@@ -75,5 +71,3 @@ function SearchBar({
     </form>
   )
 }
-
-export default memo(SearchBar)

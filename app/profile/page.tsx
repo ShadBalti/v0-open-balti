@@ -73,7 +73,7 @@ export default async function ProfilePage() {
                 <Link href="/settings">Edit Profile</Link>
               </Button>
               <Button asChild>
-                <Link href="/activity">View Your Activity</Link>
+                <Link href="/review">View My Contributions</Link>
               </Button>
             </div>
           </CardContent>
