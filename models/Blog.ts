@@ -42,6 +42,7 @@ const BlogSchema = new Schema(
       unique: true,
       lowercase: true,
       trim: true,
+      index: true,
     },
     content: {
       type: String,
@@ -55,6 +56,7 @@ const BlogSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
+      index: true,
     },
     tags: {
       type: [String],
@@ -73,10 +75,12 @@ const BlogSchema = new Schema(
         "Community Contributions",
         "Project Updates",
       ],
+      index: true,
     },
     series: {
       type: String,
       trim: true,
+      index: true,
     },
     featured: {
       type: Boolean,
@@ -104,6 +108,7 @@ const BlogSchema = new Schema(
     published: {
       type: Boolean,
       default: false,
+      index: true,
     },
     isMarkdown: {
       type: Boolean,
@@ -139,12 +144,10 @@ const BlogSchema = new Schema(
   { timestamps: true },
 )
 
-// Create text indexes for search
 BlogSchema.index({ title: "text", content: "text", tags: "text" })
-BlogSchema.index({ slug: 1 })
-BlogSchema.index({ author: 1 })
 BlogSchema.index({ published: 1, createdAt: -1 })
-BlogSchema.index({ category: 1 })
-BlogSchema.index({ series: 1 })
 
-export default mongoose.models.Blog || mongoose.model<IBlog>("Blog", BlogSchema)
+const Blog = mongoose.models.Blog || mongoose.model<IBlog>("Blog", BlogSchema)
+
+export { Blog }
+export default Blog
