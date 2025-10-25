@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Search, Plus, Heart } from "lucide-react"
 import { useSession } from "next-auth/react"
 import Image from "next/image"
+import { ReadingTime } from "@/components/reading-time"
 
 interface Blog {
   _id: string
@@ -22,10 +23,13 @@ interface Blog {
   }
   tags?: string[]
   category?: string
+  series?: string
   featured?: boolean
   featuredImage?: string
+  coverImage?: string
   views: number
   likes: number
+  readingTime?: number
   createdAt: string
 }
 
@@ -62,6 +66,17 @@ export default function BlogsPage() {
     }
   }
 
+  const categories = [
+    "Language",
+    "Culture",
+    "Updates",
+    "Tutorials",
+    "Learn Balti",
+    "Cultural Articles",
+    "Community Contributions",
+    "Project Updates",
+  ]
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container py-12">
@@ -95,6 +110,32 @@ export default function BlogsPage() {
               }}
             />
           </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={category === "" ? "default" : "outline"}
+              size="sm"
+              onClick={() => {
+                setCategory("")
+                setPage(1)
+              }}
+            >
+              All
+            </Button>
+            {categories.map((cat) => (
+              <Button
+                key={cat}
+                variant={category === cat ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setCategory(cat)
+                  setPage(1)
+                }}
+              >
+                {cat}
+              </Button>
+            ))}
+          </div>
         </div>
 
         {/* Blogs Grid */}
@@ -116,10 +157,10 @@ export default function BlogsPage() {
             {blogs.map((blog) => (
               <Link key={blog._id} href={`/blogs/${blog._id}`}>
                 <Card className="h-full transition-all hover:shadow-lg">
-                  {blog.featuredImage && (
+                  {(blog.coverImage || blog.featuredImage) && (
                     <div className="relative h-48 w-full overflow-hidden rounded-t-lg bg-muted">
                       <Image
-                        src={blog.featuredImage || "/placeholder.svg"}
+                        src={blog.coverImage || blog.featuredImage || "/placeholder.svg"}
                         alt={blog.title}
                         fill
                         className="object-cover"
@@ -129,11 +170,26 @@ export default function BlogsPage() {
                   <CardHeader>
                     <CardTitle className="line-clamp-2">{blog.title}</CardTitle>
                     <CardDescription>
-                      By {blog.author.name} • {new Date(blog.createdAt).toLocaleDateString()}
+                      By {blog.author.name} •{" "}
+                      {new Date(blog.createdAt).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {blog.excerpt && <p className="line-clamp-2 text-sm text-muted-foreground">{blog.excerpt}</p>}
+
+                    <div className="flex flex-col gap-2">
+                      {blog.readingTime && <ReadingTime minutes={blog.readingTime} />}
+                      {blog.series && (
+                        <Badge variant="outline" className="w-fit text-xs">
+                          {blog.series}
+                        </Badge>
+                      )}
+                    </div>
+
                     <div className="flex flex-wrap gap-2">
                       {blog.tags?.slice(0, 2).map((tag) => (
                         <Badge key={tag} variant="secondary" className="text-xs">

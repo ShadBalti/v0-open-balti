@@ -10,6 +10,9 @@ import { useSession } from "next-auth/react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { BlogComments } from "@/components/blog-comments"
+import { MarkdownRenderer } from "@/components/markdown-renderer"
+import { SocialShare } from "@/components/social-share"
+import { AuthorInfo } from "@/components/author-info"
 
 interface Blog {
   _id: string
@@ -24,10 +27,18 @@ interface Blog {
   }
   tags?: string[]
   category?: string
+  series?: string
   featuredImage?: string
+  coverImage?: string
   views: number
   likes: number
   likedBy?: string[]
+  readingTime?: number
+  seoTitle?: string
+  seoDescription?: string
+  seoKeywords?: string[]
+  isMarkdown?: boolean
+  isContribution?: boolean
   createdAt: string
   updatedAt: string
 }
@@ -122,6 +133,7 @@ export default function BlogDetailPage() {
   }
 
   const isAuthor = session?.user?.id === blog.author._id
+  const blogUrl = typeof window !== "undefined" ? `${window.location.origin}/blogs/${blog._id}` : ""
 
   return (
     <div className="min-h-screen bg-background">
@@ -134,10 +146,14 @@ export default function BlogDetailPage() {
           </Button>
         </Link>
 
-        {/* Featured Image */}
-        {blog.featuredImage && (
+        {(blog.coverImage || blog.featuredImage) && (
           <div className="relative mb-8 h-96 w-full overflow-hidden rounded-lg bg-muted">
-            <Image src={blog.featuredImage || "/placeholder.svg"} alt={blog.title} fill className="object-cover" />
+            <Image
+              src={blog.coverImage || blog.featuredImage || "/placeholder.svg"}
+              alt={blog.title}
+              fill
+              className="object-cover"
+            />
           </div>
         )}
 
@@ -145,43 +161,47 @@ export default function BlogDetailPage() {
         <div className="mb-8">
           <h1 className="mb-4 text-4xl font-bold tracking-tight">{blog.title}</h1>
 
-          {/* Meta Info */}
-          <div className="mb-6 flex flex-col gap-4 border-b pb-6 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-4">
-              {blog.author.image && (
-                <Image
-                  src={blog.author.image || "/placeholder.svg"}
-                  alt={blog.author.name}
-                  width={48}
-                  height={48}
-                  className="rounded-full"
-                />
+          <div className="mb-6 flex flex-col gap-4 border-b pb-6">
+            <AuthorInfo author={blog.author} date={blog.createdAt} readingTime={blog.readingTime} />
+
+            {/* Series and Category */}
+            <div className="flex flex-wrap gap-2">
+              {blog.series && (
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-200">
+                  Series: {blog.series}
+                </Badge>
               )}
-              <div>
-                <p className="font-semibold">{blog.author.name}</p>
-                <p className="text-sm text-muted-foreground">{new Date(blog.createdAt).toLocaleDateString()}</p>
-              </div>
+              {blog.category && <Badge variant="secondary">{blog.category}</Badge>}
+              {blog.isContribution && (
+                <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900 dark:text-green-200">
+                  Community Contribution
+                </Badge>
+              )}
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-2">
-              <Button variant={liked ? "default" : "outline"} size="sm" onClick={handleLike} className="gap-2">
-                <Heart className={`h-4 w-4 ${liked ? "fill-current" : ""}`} />
-                {likes}
-              </Button>
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-2">
+                <Button variant={liked ? "default" : "outline"} size="sm" onClick={handleLike} className="gap-2">
+                  <Heart className={`h-4 w-4 ${liked ? "fill-current" : ""}`} />
+                  {likes}
+                </Button>
 
-              {isAuthor && (
-                <>
-                  <Link href={`/blogs/${blog._id}/edit`}>
-                    <Button variant="outline" size="sm">
-                      <Edit className="h-4 w-4" />
+                {isAuthor && (
+                  <>
+                    <Link href={`/blogs/${blog._id}/edit`}>
+                      <Button variant="outline" size="sm">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                    <Button variant="destructive" size="sm" onClick={handleDelete}>
+                      <Trash2 className="h-4 w-4" />
                     </Button>
-                  </Link>
-                  <Button variant="destructive" size="sm" onClick={handleDelete}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </>
-              )}
+                  </>
+                )}
+              </div>
+
+              <SocialShare title={blog.title} url={blogUrl} description={blog.excerpt} />
             </div>
           </div>
 
@@ -197,9 +217,14 @@ export default function BlogDetailPage() {
           )}
         </div>
 
-        {/* Content */}
-        <div className="prose prose-sm dark:prose-invert max-w-none mb-12">
-          <div dangerouslySetInnerHTML={{ __html: blog.content }} />
+        <div className="mb-12">
+          {blog.isMarkdown ? (
+            <MarkdownRenderer content={blog.content} />
+          ) : (
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <div dangerouslySetInnerHTML={{ __html: blog.content }} />
+            </div>
+          )}
         </div>
 
         {/* Stats */}

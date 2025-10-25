@@ -137,6 +137,9 @@ importers:
       lucide-react:
         specifier: ^0.454.0
         version: 0.454.0(react@19.0.0)
+      marked:
+        specifier: latest
+        version: 16.4.1
       mongodb:
         specifier: latest
         version: 6.20.0(@aws-sdk/credential-providers@3.916.0)(@mongodb-js/zstd@2.0.1)(gcp-metadata@8.1.1)(kerberos@2.2.2)(mongodb-client-encryption@6.5.0)(snappy@7.3.3)(socks@2.8.7)
@@ -2045,6 +2048,11 @@ packages:
     resolution: {integrity: sha512-hw7zMDwykCLnEzgncEEjHeA6+45aeEzRYuKHuyRSOPkhko+J3ySGjGIzu+mmMfDFG1vazHepMaYFYHbTFAZAAQ==}
     peerDependencies:
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0-rc
+
+  marked@16.4.1:
+    resolution: {integrity: sha512-ntROs7RaN3EvWfy3EZi14H4YxmT6A5YvywfhO+0pm+cH/dnSQRmdAmoFIc3B9aiwTehyk7pESH4ofyBY+V5hZg==}
+    engines: {node: '>= 20'}
+    hasBin: true
 
   memory-pager@1.5.0:
     resolution: {integrity: sha512-ZS4Bp4r/Zoeq6+NLJpP+0Zzm0pR8whtGPf1XExKLJBAczGMnSi3It14OiNCStjQjM6NU1okjQGSxgEZN8eBYKg==}
@@ -4828,6 +4836,8 @@ snapshots:
   lucide-react@0.454.0(react@19.0.0):
     dependencies:
       react: 19.0.0
+
+  marked@16.4.1: {}
 
   memory-pager@1.5.0: {}
 
