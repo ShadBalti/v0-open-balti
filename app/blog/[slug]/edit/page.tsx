@@ -1,8 +1,8 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useParams } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,11 +15,31 @@ import MDEditor from "@uiw/react-md-editor"
 import "@uiw/react-md-editor/markdown-editor.css"
 import "@uiw/react-markdown-preview/markdown.css"
 
-export default function CreateBlogPage() {
+interface BlogFormData {
+  title: string
+  excerpt: string
+  content: string
+  tags: string
+  category: string
+  series: string
+  featuredImage: string
+  coverImage: string
+  seoTitle: string
+  seoDescription: string
+  seoKeywords: string
+  isMarkdown: boolean
+  isContribution: boolean
+  contributorNotes: string
+  published: boolean
+}
+
+export default function EditBlogPage() {
   const router = useRouter()
+  const params = useParams()
   const { data: session } = useSession()
-  const [loading, setLoading] = useState(false)
-  const [formData, setFormData] = useState({
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [formData, setFormData] = useState<BlogFormData>({
     title: "",
     excerpt: "",
     content: "",
@@ -34,17 +54,54 @@ export default function CreateBlogPage() {
     isMarkdown: true,
     isContribution: false,
     contributorNotes: "",
+    published: false,
   })
+  const [blogId, setBlogId] = useState<string>("")
 
-  if (!session) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <p className="text-muted-foreground mb-4">Please sign in to create a blog</p>
-        <Link href="/auth/signin">
-          <Button>Sign In</Button>
-        </Link>
-      </div>
-    )
+  useEffect(() => {
+    if (!session) return
+    fetchBlog()
+  }, [session, params.slug])
+
+  const fetchBlog = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch(`/api/blogs/by-slug/${params.slug}`)
+      const data = await response.json()
+
+      if (data.success) {
+        const blog = data.data
+        setBlogId(blog._id)
+
+        // Check if user is author
+        if (session?.user?.id !== blog.author._id) {
+          router.push("/blogs")
+          return
+        }
+
+        setFormData({
+          title: blog.title,
+          excerpt: blog.excerpt || "",
+          content: blog.content,
+          tags: blog.tags?.join(", ") || "",
+          category: blog.category || "",
+          series: blog.series || "",
+          featuredImage: blog.featuredImage || "",
+          coverImage: blog.coverImage || "",
+          seoTitle: blog.seoTitle || blog.title,
+          seoDescription: blog.seoDescription || blog.excerpt || "",
+          seoKeywords: blog.seoKeywords?.join(", ") || "",
+          isMarkdown: blog.isMarkdown !== false,
+          isContribution: blog.isContribution || false,
+          contributorNotes: blog.contributorNotes || "",
+          published: blog.published || false,
+        })
+      }
+    } catch (error) {
+      console.error("Error fetching blog:", error)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -73,60 +130,61 @@ export default function CreateBlogPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
+    setSaving(true)
 
     try {
       const readingTime = calculateReadingTime(formData.content)
       const excerpt = formData.excerpt || generateExcerpt(formData.content)
 
-      const response = await fetch("/api/blogs", {
-        method: "POST",
+      const response = await fetch(`/api/blogs/${blogId}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
           excerpt,
           readingTime,
-          tags: formData.tags
-            .split(",")
-            .map((tag) => tag.trim())
-            .filter(Boolean),
-          seoKeywords: formData.seoKeywords
-            .split(",")
-            .map((kw) => kw.trim())
-            .filter(Boolean),
-          published: false,
+          tags: formData.tags.split(",").map((tag) => tag.trim()),
+          seoKeywords: formData.seoKeywords.split(",").map((kw) => kw.trim()),
         }),
       })
 
       const data = await response.json()
 
       if (data.success) {
-        router.push(`/blog/${data.data.slug}`)
+        router.push(`/blog/${params.slug}`)
       } else {
-        alert(data.error || "Failed to create blog")
+        alert(data.error || "Failed to update blog")
       }
     } catch (error) {
-      console.error("Error creating blog:", error)
-      alert("Failed to create blog")
+      console.error("Error updating blog:", error)
+      alert("Failed to update blog")
     } finally {
-      setLoading(false)
+      setSaving(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-muted-foreground">Loading blog...</p>
+      </div>
+    )
   }
 
   return (
     <div className="min-h-screen bg-background">
       <div className="container max-w-4xl py-12">
-        <Link href="/blogs" className="mb-8 inline-block">
+        <Link href={`/blog/${params.slug}`} className="mb-8 inline-block">
           <Button variant="ghost" size="sm">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Blogs
+            Back to Blog
           </Button>
         </Link>
 
         <Card>
           <CardHeader>
-            <CardTitle>Create New Blog</CardTitle>
-            <CardDescription>Share your thoughts about Balti language and culture</CardDescription>
+            <CardTitle>Edit Blog</CardTitle>
+            <CardDescription>Update your blog post</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -139,7 +197,7 @@ export default function CreateBlogPage() {
                 <label className="block text-sm font-medium mb-2">Excerpt</label>
                 <Textarea
                   name="excerpt"
-                  placeholder="Brief summary of your blog (optional - will be auto-generated if empty)"
+                  placeholder="Brief summary of your blog"
                   value={formData.excerpt}
                   onChange={handleChange}
                   rows={2}
@@ -265,36 +323,24 @@ export default function CreateBlogPage() {
               </div>
 
               <div className="border-t pt-6">
-                <h3 className="font-semibold mb-4">Community Contribution</h3>
-                <div className="space-y-4">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      name="isContribution"
-                      checked={formData.isContribution}
-                      onChange={handleChange}
-                      className="rounded"
-                    />
-                    <span className="text-sm">This is a community contribution</span>
-                  </label>
-
-                  {formData.isContribution && (
-                    <Textarea
-                      name="contributorNotes"
-                      placeholder="Add notes about your contribution..."
-                      value={formData.contributorNotes}
-                      onChange={handleChange}
-                      rows={3}
-                    />
-                  )}
-                </div>
+                <h3 className="font-semibold mb-4">Publishing</h3>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    name="published"
+                    checked={formData.published}
+                    onChange={handleChange}
+                    className="rounded"
+                  />
+                  <span className="text-sm">Publish this blog</span>
+                </label>
               </div>
 
               <div className="flex gap-4">
-                <Button type="submit" disabled={loading}>
-                  {loading ? "Creating..." : "Create Blog"}
+                <Button type="submit" disabled={saving}>
+                  {saving ? "Saving..." : "Save Changes"}
                 </Button>
-                <Link href="/blogs">
+                <Link href={`/blog/${params.slug}`}>
                   <Button type="button" variant="outline">
                     Cancel
                   </Button>

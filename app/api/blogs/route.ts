@@ -71,7 +71,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     }
 
-    const { title, content, excerpt, tags, category, featuredImage, published } = await req.json()
+    const {
+      title,
+      content,
+      excerpt,
+      tags,
+      category,
+      series,
+      featuredImage,
+      coverImage,
+      readingTime,
+      seoTitle,
+      seoDescription,
+      seoKeywords,
+      isMarkdown,
+      isContribution,
+      contributorNotes,
+      published,
+    } = await req.json()
 
     if (!title || !content) {
       return NextResponse.json({ success: false, error: "Title and content are required" }, { status: 400 })
@@ -79,7 +96,6 @@ export async function POST(req: NextRequest) {
 
     await dbConnect()
 
-    // Generate slug from title
     const slug = title
       .toLowerCase()
       .replace(/[^\w\s-]/g, "")
@@ -99,7 +115,16 @@ export async function POST(req: NextRequest) {
       excerpt,
       tags,
       category,
+      series,
       featuredImage,
+      coverImage,
+      readingTime,
+      seoTitle: seoTitle || title,
+      seoDescription: seoDescription || excerpt,
+      seoKeywords,
+      isMarkdown: isMarkdown !== false,
+      isContribution,
+      contributorNotes,
       published: published || false,
       author: session.user.id,
     })
