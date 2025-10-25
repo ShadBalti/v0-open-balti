@@ -1,66 +1,26 @@
-"use client"
+import { Suspense } from "react"
+import dbConnect from "@/lib/mongodb"
+import { Blog } from "@/models/Blog"
+import BlogsPageClient from "@/components/blogs-page-client"
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Search, Plus, Heart } from "lucide-react"
-import { useSession } from "next-auth/react"
-import Image from "next/image"
+async function getInitialBlogs() {
+  try {
+    await dbConnect()
+    const blogs = await Blog.find({ published: true })
+      .populate("author", "name image")
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .lean()
 
-interface Blog {
-  _id: string
-  title: string
-  excerpt?: string
-  content: string
-  author: {
-    _id: string
-    name: string
-    image?: string
+    return blogs as Blog[]
+  } catch (error) {
+    console.error("Error fetching initial blogs:", error)
+    return []
   }
-  tags?: string[]
-  category?: string
-  featured?: boolean
-  featuredImage?: string
-  views: number
-  likes: number
-  createdAt: string
 }
 
-export default function BlogsPage() {
-  const { data: session } = useSession()
-  const [blogs, setBlogs] = useState<Blog[]>([])
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState("")
-  const [category, setCategory] = useState("")
-  const [page, setPage] = useState(1)
-
-  useEffect(() => {
-    fetchBlogs()
-  }, [search, category, page])
-
-  const fetchBlogs = async () => {
-    try {
-      setLoading(true)
-      const params = new URLSearchParams()
-      if (search) params.append("search", search)
-      if (category) params.append("category", category)
-      params.append("page", page.toString())
-
-      const response = await fetch(`/api/blogs?${params}`)
-      const data = await response.json()
-
-      if (data.success) {
-        setBlogs(data.data)
-      }
-    } catch (error) {
-      console.error("Error fetching blogs:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
+export default async function BlogsPage() {
+  const initialBlogs = await getInitialBlogs()
 
   return (
     <div className="min-h-screen bg-background">
@@ -71,89 +31,12 @@ export default function BlogsPage() {
             <h1 className="text-4xl font-bold tracking-tight">Blog</h1>
             <p className="mt-2 text-muted-foreground">Explore articles about Balti language, culture, and community</p>
           </div>
-          {session && (
-            <Link href="/blogs/create">
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Write Blog
-              </Button>
-            </Link>
-          )}
         </div>
 
-        {/* Search and Filters */}
-        <div className="mb-8 space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search blogs..."
-              className="pl-10"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value)
-                setPage(1)
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Blogs Grid */}
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <p className="text-muted-foreground">Loading blogs...</p>
-          </div>
-        ) : blogs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12">
-            <p className="text-muted-foreground">No blogs found</p>
-            {session && (
-              <Link href="/blogs/create">
-                <Button className="mt-4">Create First Blog</Button>
-              </Link>
-            )}
-          </div>
-        ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {blogs.map((blog) => (
-              <Link key={blog._id} href={`/blogs/${blog._id}`}>
-                <Card className="h-full transition-all hover:shadow-lg">
-                  {blog.featuredImage && (
-                    <div className="relative h-48 w-full overflow-hidden rounded-t-lg bg-muted">
-                      <Image
-                        src={blog.featuredImage || "/placeholder.svg"}
-                        alt={blog.title}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                  )}
-                  <CardHeader>
-                    <CardTitle className="line-clamp-2">{blog.title}</CardTitle>
-                    <CardDescription>
-                      By {blog.author.name} • {new Date(blog.createdAt).toLocaleDateString()}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {blog.excerpt && <p className="line-clamp-2 text-sm text-muted-foreground">{blog.excerpt}</p>}
-                    <div className="flex flex-wrap gap-2">
-                      {blog.tags?.slice(0, 2).map((tag) => (
-                        <Badge key={tag} variant="secondary" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className="flex items-center justify-between text-sm text-muted-foreground">
-                      <span>{blog.views} views</span>
-                      <div className="flex items-center gap-1">
-                        <Heart className="h-4 w-4" />
-                        {blog.likes}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        )}
+        {/* Client-side search and filtering */}
+        <Suspense fallback={<div className="py-12 text-center text-muted-foreground">Loading blogs...</div>}>
+          <BlogsPageClient initialBlogs={initialBlogs} />
+        </Suspense>
       </div>
     </div>
   )
