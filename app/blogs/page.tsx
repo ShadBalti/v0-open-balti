@@ -1,11 +1,6 @@
 import { Suspense } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Plus } from "lucide-react"
-import { getServerSession } from "next-auth/react"
 import dbConnect from "@/lib/mongodb"
 import { Blog } from "@/models/Blog"
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import BlogsPageClient from "@/components/blogs-page-client"
 
 async function getInitialBlogs() {
@@ -25,7 +20,6 @@ async function getInitialBlogs() {
 }
 
 export default async function BlogsPage() {
-  const session = await getServerSession(authOptions)
   const initialBlogs = await getInitialBlogs()
 
   return (
@@ -37,14 +31,6 @@ export default async function BlogsPage() {
             <h1 className="text-4xl font-bold tracking-tight">Blog</h1>
             <p className="mt-2 text-muted-foreground">Explore articles about Balti language, culture, and community</p>
           </div>
-          {session && (
-            <Link href="/blogs/create">
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Write Blog
-              </Button>
-            </Link>
-          )}
         </div>
 
         {/* Client-side search and filtering */}

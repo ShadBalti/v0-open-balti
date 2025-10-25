@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Search, Heart } from "lucide-react"
+import { Search, Heart, Plus } from "lucide-react"
 import Image from "next/image"
 import { ReadingTime } from "@/components/reading-time"
+import { useSession } from "next-auth/react"
 
 interface Blog {
   _id: string
@@ -37,6 +38,7 @@ interface BlogsPageClientProps {
 }
 
 export default function BlogsPageClient({ initialBlogs }: BlogsPageClientProps) {
+  const { data: session } = useSession()
   const [blogs, setBlogs] = useState<Blog[]>(initialBlogs)
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState("")
@@ -81,6 +83,17 @@ export default function BlogsPageClient({ initialBlogs }: BlogsPageClientProps) 
 
   return (
     <>
+      {session && (
+        <div className="mb-8 flex justify-end">
+          <Link href="/blogs/create">
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Write Blog
+            </Button>
+          </Link>
+        </div>
+      )}
+
       {/* Search and Filters */}
       <div className="mb-8 space-y-4">
         <div className="relative">
