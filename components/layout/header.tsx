@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { UserDropdown } from "@/components/auth/user-dropdown"
 import { useSession } from "next-auth/react"
-import { Bookmark, BookOpen, Info, Menu, Users, X } from "lucide-react"
+import { Bookmark, BookOpen, Info, Menu, Users, X, FileText } from "lucide-react"
 import { useState } from "react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
@@ -26,6 +26,7 @@ export function Header() {
 
   const navItems = [
     { href: "/", label: "Dictionary", icon: <BookOpen className="h-4 w-4 mr-2" /> },
+    { href: "/blogs", label: "Blog", icon: <FileText className="h-4 w-4 mr-2" /> },
     { href: "/about", label: "About", icon: <Info className="h-4 w-4 mr-2" /> },
     { href: "/contributors", label: "Contributors", icon: <Users className="h-4 w-4 mr-2" /> },
     ...(session ? [{ href: "/favorites", label: "Favorites", icon: <Bookmark className="h-4 w-4 mr-2" /> }] : []),
@@ -69,7 +70,7 @@ export function Header() {
           <Button
             variant="outline"
             size="icon"
-            className="md:hidden"
+            className="md:hidden bg-transparent"
             onClick={toggleMobileMenu}
             aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
           >
